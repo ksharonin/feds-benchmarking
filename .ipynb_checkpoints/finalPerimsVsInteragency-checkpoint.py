@@ -18,6 +18,7 @@ from folium import plugins
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
 from datetime import datetime
 
+# @NOTE: rename "finalized_williams" var to elim confusion for generalized v.
 
 # constants
 perims_path = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
@@ -27,6 +28,7 @@ use_final = True
 layer = 'perimeter'
 ascending = False # NOTE: use var as indicator for plot ordering
 date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) 
+curr_dayrange = 1 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
 
 # change the global options that Geopandas inherits from
 pd.set_option('display.max_columns',None)
@@ -127,75 +129,83 @@ except TypeError as e:
 # transform NIFC str to new datetime object
 cur_format = '%Y%m%d' 
 year_perims['DATE_CUR_STAMP'] =  year_perims.apply(lambda row : datetime.strptime(row.DATE_CUR, cur_format), axis = 1)
-
+    
 # since get_loc was presenting type issues -> self define
-# @TODO: define params/fun changes to include non-equality date matches
-def get_nearest(dataset, timestamp):
+def get_nearest(dataset, timestamp, dayrange=0):
     """ Identify rows of dataset with timestamp matches;
         expects year, month, date in datetime format
         
         dataset: input dataset to search for closest match
         timestamp: timestamp we want a close match for
-        @TODO: flexibility param for day specifics
+        @TODO: dayrange: 0 (only self day) -> 7 (7 days ahead/behind)
         
         returns: dataset with d->m->y closest matches
     """
+    assert dayrange < 8, "Excessive provided day range; select smaller search period."
     
-    # reset best matches
-    index_day = None
-    index_month = None # @TODO: remove, redundant?
-    index_year = None
+    transformed = dataset.DATE_CUR_STAMP.tolist()
+
+    clos_dict = {
+      abs(sample_timestamp.timestamp() - date.timestamp()) : date
+      for date in transformed
+    }
+
+    res = clos_dict[min(clos_dict.keys())]
+    # print("Nearest date: " + str(res))
     
-    for l in range(dataset.shape[0]):
-        curr = dataset.iloc[[l]].DATE_CUR_STAMP.max()
-        if curr.year != sample_timestamp.year:
-            # at least want matching year
-            continue
-        if curr.day == sample_timestamp.day and curr.month == sample_timestamp.month:
-            print('Identified match by day')
-            if type(index_day) is int:
-                # multiple options
-                index_day = [index_day] # transform type
-                index_day.append(l)
-
-            elif type(index_day) is list:
-                # already list -> concat
-                index_day.append(l)
-            else:
-                index_day = l
-
-    # type adjustment
-    if type(index_day) not list:
-        index_day = [index_day]
-        
-    # fetch rows 
-    finalized = dataset.iloc[index_day]
+    # check on dayrange flexibility
+    if abs(timestamp.day - res.day) > dayrange and dayrange == 7:
+        # trigger exception
+        return None
+    
+    assert abs(timestamp.day - res.day) <= dayrange, "No dates found in specified range; try a more flexible range by adjusting `dayrange` var"
+    
+    # fetch rows with res timestamp
+    finalized = dataset[datset['DATE_CUR_STAMP'] == res]
+    
     return finalized
 
-# nifc-perim pairs
+# nifc-perim pairs as tuples
+# i.e. (perimeter FEDS instance, NIFC match)
 comparison_pairs = []
 
-# per FEDS output perim
+# per FEDS output perim -> get best NIFC match(es) by date
 for instance in range(finalized_williams.shape[0]):
     # extract time stamp
     timestamp = finalized_williams.iloc[[instance]].t
     # query matching nifc with year-month-day form
     # year-month-day matches
-    matches = get_nearest(year_perims, timestamp)
+    matches = get_nearest(year_perims, timestamp, curr_dayrange)
     if matches is None:
-        print('Warning: no exact same day matches found; reduce from strict day match to proximal...')
-        # @TODO: modify function to accept "looser" day match by distance
-        # @TODO: iterate over 1day - 7 day if none keeps resulting
-        # by 7 day -> resort to just geog overlay (?) vs. non valid matches?
+        # @TODO: improve handling -> likely just continue and report failed benching
+        raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
         
-    # intersect closest day matches 
-    resulting = gpd.overlay(match,finalized_williams.iloc[[instance]], how='intersection')
-    # check empty
-
+    # intersect closest day matches - ideally size one
+    intersd = []
+    # find all matches with intersections 
+    for a_match in matches:
+        resulting = gpd.overlay(match,finalized_williams.iloc[[instance]], how='intersection')
+        # if non empty -> append
+        if not resulting.empty:
+            intersd.append(a_match)
     
-# case 2: multiple NIFC matches:
- 
-# per pair run comparison
+    if len(intersd) == 0:
+        print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
+        comparison_pairs.append((finalized_williams.iloc[[instance]], None))
+        
+    
+    elif len(intersd) > 1:
+        # if multiple have overlay -> store them with a warning 
+        print(f'NOTICE: More thane 1, in total: {len(matches)} NIFC date matches, intersect with perimeter master row ID: {finalized_williams.iloc[[instance]].index} with index in finalized_willaims: {instance}, storing all as pairs')
+        
+        # iterate and generate tuple pairs; append to list
+        [comparison_pairs.append((finalized_williams.iloc[[instance]], to_ap)) for to_ap in intersd]
+            
+    else:
+        # single match -> append (perim instance, NIFC single match)
+        comparison_pairs.append((finalized_williams.iloc[[instance]], intersd[0]))
+
+# @TODO ACCURACY CALCULATION: per pair run comparison
 for nifc_perim_pair in comparison_pairs:
     
 
