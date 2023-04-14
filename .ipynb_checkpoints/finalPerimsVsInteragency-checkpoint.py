@@ -91,7 +91,15 @@ else:
         mul_years = True
         # start edge case
         # @TODO: update handling of edge case for filtering
+        assert not mul_years, "@TODO: catch edge case for years; force halt for now."
 
+# print('VERBOSE: DEBUGGING MODE')
+# print('full set of gdf')
+# print(finalized_williams)
+# print('t of full gdf')
+# print(finalized_williams.t.tolist())
+
+        
 # adjust CRS - assumes uniform crs
 try:
     print('Attempting set_crs...')
@@ -146,15 +154,6 @@ def get_nearest(dataset, timestamp, dayrange=0):
     
     timestamp = timestamp.item()
     transformed = dataset.DATE_CUR_STAMP.tolist()
-    
-    # VERBOSE DEBUGGING
-    # print('VERBOSE DEBUGGING: DATE IN LIST')
-    # print('timestamp:')
-    # print(timestamp)
-    # print('timestamp type:')
-    # print(type(timestamp))
-    # print('Timestamp.timestamp:')
-    # print(timestamp.timestamp())
 
     clos_dict = {
       abs(timestamp.timestamp() - date.timestamp()) : date
@@ -185,9 +184,11 @@ print('Per FEDS output, identify best NIFC match...')
 for instance in tqdm(range(finalized_williams.shape[0])):
     # extract time stamp
     timestamp = finalized_williams.iloc[[instance]].t
+    
     # query matching nifc with year-month-day form
     # year-month-day matches
     matches = get_nearest(year_perims, timestamp, curr_dayrange)
+    
     if matches is None:
         # @TODO: improve handling -> likely just continue and report failed benching
         raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
@@ -226,13 +227,16 @@ for instance in tqdm(range(finalized_williams.shape[0])):
 # @NOTE: consider reworking store situation
 # iterating over list can be time consuming for feds perims
 error_percent_performance = []
+  
 
 # @TODO ACCURACY CALCULATION: per pair run comparison
 # calculate symmetrical difference
 for nifc_perim_pair in comparison_pairs:
+    
     # 0: feds instance, 1: nifc matces
     perim_inst = nifc_perim_pair[0]
     nifc_inst = nifc_perim_pair[1]
+    
     # if none type, append 0 accuracy and cont
     if nifc_inst is None:
         error_percent_performance.append(100)
@@ -253,14 +257,28 @@ print('-----------------')
 print('ANALYSIS COMPLETE')
 print('-----------------')
 
+assert len(error_percent_performance) == len(comparison_pairs), "Mismatching dims for error performance v. comparison pairs, check resulting arrays"
+
 print('Resulting error percentages for FEDS perimeter accuracy vs. closest intersecting NIFC:')
 count_100 = 0
-for sam in error_percent_performance:
+count_100_dates = []
+for index in range(len(error_percent_performance)):
+    # fetch inst + components by index
+    sam = error_percent_performance[index]
+    match_tuple = comparison_pairs[index]
+    perim_output = match_tuple[0]
+    nifc_perim = match_tuple[1]
+    
     if sam == 100:
+        # count and append date
         count_100 += 1
+        count_100_dates.append(perim_output.t.item())
     else:
+        print(f'For FEDS output perimeter at {perim_output.t.item()} and NIFC perimeter at {nifc_perim.DATE_CUR_STAMP.item()}, percent error of:')
         print(f'{sam}%')
 print(f'{count_100} instances of 100% error')
+print('FEDS output perimeter dates with no matches by threshold:')
+print(count_100_dates)
 
 # @TODO: implement proper units
     
