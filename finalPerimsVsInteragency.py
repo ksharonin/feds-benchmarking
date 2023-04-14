@@ -17,6 +17,7 @@ import folium
 from folium import plugins
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
 from datetime import datetime
+from tqdm import tqdm # add in progress watch
 
 # @NOTE: rename "finalized_williams" var to elim confusion for generalized v.
 
@@ -24,7 +25,7 @@ from datetime import datetime
 perims_path = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
 williams_final_path = '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*'
 usa_path = "/projects/my-public-bucket/USAShapeFile"
-use_final = True
+use_final = False
 layer = 'perimeter'
 ascending = False # NOTE: use var as indicator for plot ordering
 date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) 
@@ -101,7 +102,7 @@ except:
     finalized_perims = finalized_perims.to_crs(finalized_williams.crs)
     print(finalized_perims.crs)
 
-assert finalized_williams.crs == year_perims.crs, "CRS mismatch"
+assert finalized_williams.crs == finalized_perims.crs, "CRS mismatch"
 
 # filter by year if year available
 try:
@@ -143,10 +144,20 @@ def get_nearest(dataset, timestamp, dayrange=0):
     """
     assert dayrange < 8, "Excessive provided day range; select smaller search period."
     
+    timestamp = timestamp.item()
     transformed = dataset.DATE_CUR_STAMP.tolist()
+    
+    # VERBOSE DEBUGGING
+    # print('VERBOSE DEBUGGING: DATE IN LIST')
+    # print('timestamp:')
+    # print(timestamp)
+    # print('timestamp type:')
+    # print(type(timestamp))
+    # print('Timestamp.timestamp:')
+    # print(timestamp.timestamp())
 
     clos_dict = {
-      abs(sample_timestamp.timestamp() - date.timestamp()) : date
+      abs(timestamp.timestamp() - date.timestamp()) : date
       for date in transformed
     }
 
@@ -161,7 +172,7 @@ def get_nearest(dataset, timestamp, dayrange=0):
     assert abs(timestamp.day - res.day) <= dayrange, "No dates found in specified range; try a more flexible range by adjusting `dayrange` var"
     
     # fetch rows with res timestamp
-    finalized = dataset[datset['DATE_CUR_STAMP'] == res]
+    finalized = dataset[dataset['DATE_CUR_STAMP'] == res]
     
     return finalized
 
@@ -170,7 +181,8 @@ def get_nearest(dataset, timestamp, dayrange=0):
 comparison_pairs = []
 
 # per FEDS output perim -> get best NIFC match(es) by date
-for instance in range(finalized_williams.shape[0]):
+print('Per FEDS output, identify best NIFC match...')
+for instance in tqdm(range(finalized_williams.shape[0])):
     # extract time stamp
     timestamp = finalized_williams.iloc[[instance]].t
     # query matching nifc with year-month-day form
@@ -183,8 +195,13 @@ for instance in range(finalized_williams.shape[0]):
     # intersect closest day matches - ideally size one
     intersd = []
     # find all matches with intersections 
-    for a_match in matches:
-        resulting = gpd.overlay(match,finalized_williams.iloc[[instance]], how='intersection')
+    # for a_match in matches:
+    for a_m in range(matches.shape[0]):
+    
+        # set using index
+        a_match = matches.iloc[[a_m]]
+        
+        resulting = gpd.overlay(a_match,finalized_williams.iloc[[instance]], how='intersection')
         # if non empty -> append
         if not resulting.empty:
             # @NOTE: do NOT append the intersection; want original object only
@@ -216,7 +233,12 @@ for nifc_perim_pair in comparison_pairs:
     # 0: feds instance, 1: nifc matces
     perim_inst = nifc_perim_pair[0]
     nifc_inst = nifc_perim_pair[1]
-    sym_diff = perim_inst.symmetrical_difference(nifc_inst, align=False)
+    # if none type, append 0 accuracy and cont
+    if nifc_inst is None:
+        error_percent_performance.append(100)
+        continue
+    
+    sym_diff = perim_inst.symmetric_difference(nifc_inst, align=False)
     # use item() to fetch int out of values
     assert sym_diff.shape[0] == 1, "Multiple sym_diff entries identified; pair accuracy evaluation will fail."
     # calculate error percent: (difference / "correct" shape aka nifc)*100
@@ -232,11 +254,18 @@ print('ANALYSIS COMPLETE')
 print('-----------------')
 
 print('Resulting error percentages for FEDS perimeter accuracy vs. closest intersecting NIFC:')
+count_100 = 0
 for sam in error_percent_performance:
-    print(f'{sam}%')
+    if sam == 100:
+        count_100 += 1
+    else:
+        print(f'{sam}%')
+print(f'{count_100} instances of 100% error')
 
 # @TODO: implement proper units
     
 # @TODO: ideal storage ideas? 
+# idea: generate ipynb for visualization? 
+# need to replace/write over if duplicates exist
 
 # access to alternative FEDS OUTPUT? 
