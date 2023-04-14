@@ -187,6 +187,7 @@ for instance in range(finalized_williams.shape[0]):
         resulting = gpd.overlay(match,finalized_williams.iloc[[instance]], how='intersection')
         # if non empty -> append
         if not resulting.empty:
+            # @NOTE: do NOT append the intersection; want original object only
             intersd.append(a_match)
     
     if len(intersd) == 0:
@@ -205,10 +206,37 @@ for instance in range(finalized_williams.shape[0]):
         # single match -> append (perim instance, NIFC single match)
         comparison_pairs.append((finalized_williams.iloc[[instance]], intersd[0]))
 
-# @TODO ACCURACY CALCULATION: per pair run comparison
-for nifc_perim_pair in comparison_pairs:
-    
+# @NOTE: consider reworking store situation
+# iterating over list can be time consuming for feds perims
+error_percent_performance = []
 
-# storage? best for caching / re-running?
+# @TODO ACCURACY CALCULATION: per pair run comparison
+# calculate symmetrical difference
+for nifc_perim_pair in comparison_pairs:
+    # 0: feds instance, 1: nifc matces
+    perim_inst = nifc_perim_pair[0]
+    nifc_inst = nifc_perim_pair[1]
+    sym_diff = perim_inst.symmetrical_difference(nifc_inst, align=False)
+    # use item() to fetch int out of values
+    assert sym_diff.shape[0] == 1, "Multiple sym_diff entries identified; pair accuracy evaluation will fail."
+    # calculate error percent: (difference / "correct" shape aka nifc)*100
+    error_percent = (sym_diff.geometry.area.item() / nifc_inst.geometry.area.item())*100
+    # align calculations by index -> zip n store at end
+    error_percent_performance.append(error_percent)
+
+
+
+# @NOTE: end for now just to see outputs
+print('-----------------')
+print('ANALYSIS COMPLETE')
+print('-----------------')
+
+print('Resulting error percentages for FEDS perimeter accuracy vs. closest intersecting NIFC:')
+for sam in error_percent_performance:
+    print(f'{sam}%')
+
+# @TODO: implement proper units
+    
+# @TODO: ideal storage ideas? 
 
 # access to alternative FEDS OUTPUT? 
