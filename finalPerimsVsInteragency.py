@@ -2,34 +2,121 @@
 import osgeo
 import geopandas as gpd
 import pandas as pd
-from osgeo import ogr
 import numpy as np
-from matplotlib import pyplot as plt
 import os
 import xarray as xr
 import rasterio
 import glob
-from shapely.errors import ShapelyDeprecationWarning
-from shapely.geometry import Point
 import shapely.speedups
 import warnings
 import folium
+import boto3
+import botocore
+
+from shapely.errors import ShapelyDeprecationWarning
+from shapely.geometry import Point
 from folium import plugins
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
 from datetime import datetime
 from tqdm import tqdm # add in progress watch
+from matplotlib import pyplot as plt
+from osgeo import ogr
 
 # @NOTE: rename "finalized_williams" var to elim confusion for generalized v.
 
-# constants
+# CONSTANTS
 perims_path = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
 williams_final_path = '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*'
+# @TODO: call path validity checks after f complete
+
+
+# @TODO: regex which starts with "F4655"
+# break down paths for s3 check
+# directory = 'projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/'
+# object_file = '*4655*'
+
 usa_path = "/projects/my-public-bucket/USAShapeFile"
 use_final = False
 layer = 'perimeter'
 ascending = False # NOTE: use var as indicator for plot ordering
 date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) 
 curr_dayrange = 1 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
+unit_preference = 'metre' # unit of choice @TODO double check plot impact
+apply_Wildfire_Final_Perimeter = False # apply the NIFC label - WARNING: unreliable given inconsistency
+
+# FUNCTION DEFINITIONS
+
+# @TODO: FINISH CHECK -add s3 path/validity check w boto3
+def path_exists(path, ptype):
+    """ Check if path exists (regular OS or s3)
+        path == url to check
+        ptype == "reg" vs "s3"
+    
+        return: boolean
+    """
+    
+    if ptype == 's3':
+        # @TODO: fix s3 check (unable to load in)
+        s3 = boto3.resource('s3')
+
+        try:
+            s3.Object(directory, object_file).load()
+            return True 
+        except botocore.exceptions.ClientError as e:
+            if e.response['Error']['Code'] == "404":
+                # The object does not exist.
+                assert -1 == 0, "Failed s3 reading, object DNE"
+                return False
+            else:
+                assert -1 == 0, "Failed s3 reading, non 404."
+                return False
+    else:
+        # @TODO: run regular os check
+        return False
+
+def get_nearest(dataset, timestamp, dayrange=0):
+    """ Identify rows of dataset with timestamp matches;
+        expects year, month, date in datetime format
+        
+        dataset: input dataset to search for closest match
+        timestamp: timestamp we want a close match for
+        @TODO: dayrange: 0 (only self day) -> 7 (7 days ahead/behind)
+        
+        returns: dataset with d->m->y closest matches
+    """
+    assert dayrange < 8, "Excessive provided day range; select smaller search period."
+    
+    timestamp = timestamp.item()
+    transformed = dataset.DATE_CUR_STAMP.tolist()
+
+    clos_dict = {
+      abs(timestamp.timestamp() - date.timestamp()) : date
+      for date in transformed
+    }
+
+    res = clos_dict[min(clos_dict.keys())]
+    # print("Nearest date: " + str(res))
+    
+    # check on dayrange flexibility
+    if abs(timestamp.day - res.day) > dayrange and dayrange == 7:
+        # trigger exception
+        return None
+    
+    assert abs(timestamp.day - res.day) <= dayrange, "No dates found in specified range; try a more flexible range by adjusting `dayrange` var"
+    
+    # fetch rows with res timestamp
+    finalized = dataset[dataset['DATE_CUR_STAMP'] == res]
+    
+    return finalized
+
+# @TODO: implement reduce/simplify geom
+def simplify_geometry(shape, removal):
+    # geopandas.GeoSeries.simplify(tolerance, preserve_topology)
+    # shapely: object.simplify(tolerance, preserve_topology=True)
+    
+    return None
+
+# MAIN CODE 
 
 # change the global options that Geopandas inherits from
 pd.set_option('display.max_columns',None)
@@ -44,8 +131,9 @@ non_empty = df[df.geometry != None]
 # remove null acres
 non_null = non_empty[non_empty.GIS_ACRES != 0]
 finalized_perims = non_null
-# NOTE: filtering by 'final' label established by NIFC is unreliable
-# finalized_perims = non_empty[non_empty.FEATURE_CA == 'Wildfire Final Perimeter']
+# NOTE: filtering by 'final' label established by NIFC is UNRELIABLE!
+if apply_Wildfire_Final_Perimeter:
+    finalized_perims = non_empty[non_empty.FEATURE_CA == 'Wildfire Final Perimeter']
 
 # Williams ID based path
 lf_files = glob.glob(williams_final_path)
@@ -55,11 +143,22 @@ print('Number of LF ids:',len(lf_ids)) # Should be one, just william's flats
 
 # save set of fire(s) into single var depending on mode
 
+print('VERBOSE: print lf_ids')
+print(lf_ids)
+print('LAST ELEMENT OF LIST')
+print(lf_ids[-1])
+print('BUG: returning empty list... fire doesnt seem to exist...')
+
+# temporary check
+assert len(lf_ids) != 0, "lf_ids is empty, halt algorithm."
+
 # extract latest entry by ID
 largefire_dict = dict.fromkeys(lf_ids)
+
 for lf_id in lf_ids:
     most_recent_file = [file for file in lf_files if lf_id in file][-1]
     largefire_dict[lf_id] = most_recent_file
+
 gdf = gpd.read_file(largefire_dict[lf_id],layer=layer)
 # sort by descending time (latest to newest)
 gdf = gdf.sort_values(by='t',ascending=ascending)
@@ -110,7 +209,10 @@ except:
     finalized_perims = finalized_perims.to_crs(finalized_williams.crs)
     print(finalized_perims.crs)
 
+# unit/crs check
 assert finalized_williams.crs == finalized_perims.crs, "CRS mismatch"
+assert finalized_williams.crs.axis_info[0].unit_name == unit_preference, f"finalized_williams fails unit check for: {unit_preference}"
+assert finalized_perims.crs.axis_info[0].unit_name == unit_preference, f"finalized_perims fails unit check for: {unit_preference}"
 
 # filter by year if year available
 try:
@@ -138,42 +240,6 @@ except TypeError as e:
 # transform NIFC str to new datetime object
 cur_format = '%Y%m%d' 
 year_perims['DATE_CUR_STAMP'] =  year_perims.apply(lambda row : datetime.strptime(row.DATE_CUR, cur_format), axis = 1)
-    
-# since get_loc was presenting type issues -> self define
-def get_nearest(dataset, timestamp, dayrange=0):
-    """ Identify rows of dataset with timestamp matches;
-        expects year, month, date in datetime format
-        
-        dataset: input dataset to search for closest match
-        timestamp: timestamp we want a close match for
-        @TODO: dayrange: 0 (only self day) -> 7 (7 days ahead/behind)
-        
-        returns: dataset with d->m->y closest matches
-    """
-    assert dayrange < 8, "Excessive provided day range; select smaller search period."
-    
-    timestamp = timestamp.item()
-    transformed = dataset.DATE_CUR_STAMP.tolist()
-
-    clos_dict = {
-      abs(timestamp.timestamp() - date.timestamp()) : date
-      for date in transformed
-    }
-
-    res = clos_dict[min(clos_dict.keys())]
-    # print("Nearest date: " + str(res))
-    
-    # check on dayrange flexibility
-    if abs(timestamp.day - res.day) > dayrange and dayrange == 7:
-        # trigger exception
-        return None
-    
-    assert abs(timestamp.day - res.day) <= dayrange, "No dates found in specified range; try a more flexible range by adjusting `dayrange` var"
-    
-    # fetch rows with res timestamp
-    finalized = dataset[dataset['DATE_CUR_STAMP'] == res]
-    
-    return finalized
 
 # nifc-perim pairs as tuples
 # i.e. (perimeter FEDS instance, NIFC match)
