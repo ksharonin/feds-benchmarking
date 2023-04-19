@@ -37,14 +37,14 @@ data_all = pd.concat([gpd.read_file(file) for file in files],ignore_index=True)
 
 # if want to use extent set
 geojson_use = True
-geojson_keyword = 'WILLIAMS FLATS' 
+geojson_keyword = 'BOULDER' # 'WILLIAMS FLATS' 
 
 default_crs = 'epsg:9311' # universal crs for all geoms
 use_final = False
 layer = 'perimeter'
 ascending = False # NOTE: use var as indicator for plot ordering
 date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) 
-curr_dayrange = 6 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
+curr_dayrange = 2 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
 unit_preference = 'metre' # unit of choice @TODO double check plot impact
 apply_Wildfire_Final_Perimeter = False # apply the NIFC label - WARNING: unreliable given inconsistency
 simplify_tolerance = 100 # user selected tolerance upper bound

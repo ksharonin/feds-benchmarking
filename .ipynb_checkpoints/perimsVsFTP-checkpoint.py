@@ -25,20 +25,67 @@ from tqdm import tqdm # add in progress watch
 from matplotlib import pyplot as plt
 from osgeo import ogr
 
+# global constants
+geojson_use = True
+geojson_keyword = 'BOULDER' # 'WILLIAMS FLATS' 
+feds_final_path = '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*' #feds path
+ascending = True
+
+# read FEDS perims (geojson or regular)
+pd.set_option('display.max_columns',None)
+
+if geojson_use:
+    # check selected key in list
+    all_names = data_all['Name'].tolist()
+    assert geojson_keyword in all_names, "Selected geojson_keyword not in GeoJson, check constants."
+    # read geojson
+    gdf = data_all[data_all['Name']==geojson_keyword].copy()
+    gdf = gdf.sort_values(by='t',ascending=ascending)
+else: 
+    # fire id based path
+    lf_files = glob.glob(feds_final_path)
+    # unique lf ids if more than one, but works with only one too!
+    lf_ids = list(set([file.split('Largefire/')[1].split('_')[0] for file in lf_files])) 
+    print('Number of LF ids:',len(lf_ids)) # Should be one
+
+    assert len(lf_ids) != 0, "lf_ids is empty, halt algorithm."
+
+    # extract latest entry by ID
+    largefire_dict = dict.fromkeys(lf_ids)
+
+    for lf_id in lf_ids:
+        most_recent_file = [file for file in lf_files if lf_id in file][-1]
+        largefire_dict[lf_id] = most_recent_file
+
+    gdf = gpd.read_file(largefire_dict[lf_id],layer=layer)
+    # sort by descending time (latest to newest)
+    gdf = gdf.sort_values(by='t',ascending=ascending)
+
+
+    
 # reduce to GACC region - intersect w/ boundaries
 gacc_path = '/projects/my-public-bucket/gaccRegions'
 gacc_boundaries = gpd.read_file(gacc_path)
-final_gacc_region = None
+gacc_keys = ['OSCC', 'SWCC', 'GBCC', 'RMCC', 'AICC', 'NWCC', 'NRCC', 'ONCC', 'EACC', 'SACC']
+assert gacc_boundaries.GACCAbbrev.tolist() == gacc_keys, "Gacc keys order unexpected; check input file (see if sort is random)"
+# @NOTE: exclude "california_statewide" label (no fires (?) in that dir)
+ftp_names = ["alaska", "calif_n", "calif_s", "eastern", "great_basin", "n_rockies", "pacific_nw", "rocky_mtn", "southern", "southwest"]
+ftp_names_reordered = ["calif_s", "southwest", "great_basin", "rocky_mtn", "alaska", "pacific_nw", "n_rockies", "calif_n", "eastern", "southern"] 
+assert ftp_names.sort() == ftp_names_reordered.sort(), "Extra check if any spell errors occured"
 
-# @TODO: list all gacc name entires -> form dict between those and crawler words
+# @TODO: REORDER FTP NAMES TO MATCH GACC BOUNDARY LISTINGS
+gacc_name_dict = dict(gacc_boundaries, ftp_names_reordered)
+
+# @TODO: intersect and run - select w/ geoanalysis
+final_gacc_region = None 
+
+# @TODO: catch edge case of multiple NIFC regions -> throw and request manual search
+
 
 if final_gacc_region is None:
     gacc_keyword = 'unsure'
 
 # @TODO: extract year from large fire
-
-# feds output path
-feds_final_path = '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*' 
 
 
 # CALL MAIN CRAWLER 
@@ -50,7 +97,6 @@ print('NOTE: Enter incident name in ALL lower case with no "Fire" or "fire" term
 # else: pass only year/region to return URLs / dirs
 # stop at short depth(?) or provide all possible URLs?
 print('To narrow your search, enter the GACC region(s) You would like to search.')
-gacc_zones = ["alaska", "calif_n", "calif_s", "california_statewide", "eastern", "great_basin", "n_rockies", "pacific_nw", "rocky_mtn", "southern", "southwest"]
 print('IF YOU DO NOT KNOW THE REGION: please enter "unsure"')
 print('Year')
 print('Enter year from timestamp AS STRING. any error / misid should return as failure, no non-year search permitted')

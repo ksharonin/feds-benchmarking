@@ -120,7 +120,7 @@ def mainCrawler(keyword=None, gacc_keyword, year_keyword='0', depth=8):
     # found_array = []
     
     # directly have the initial array modified and then returned after recursive calls
-    found_URL_matches = crawler(starting_URL, keyword, depth)
+    found_array = crawler(starting_URL, keyword, depth)
 
     # search complete, dump results
     print(' ')
@@ -140,7 +140,7 @@ def mainCrawler(keyword=None, gacc_keyword, year_keyword='0', depth=8):
     return found_array
 
 
-def searchForKeyword(pageURL, keyWord):
+def searchForKeyword(pageURL, keyWord, selected_a_year, year_keyword):
     """ searchForKeyword() function
         Description: given a page URL, return true if the keyWord is found within the listed files/directories listed in the URL.
         Inputs: pageURL (string), keyWord (string)
@@ -150,25 +150,20 @@ def searchForKeyword(pageURL, keyWord):
 
     # Download page
     # Example of valid pageURL string input: 'https://ftp.wildfire.gov/public/incident_specific_data/'
-    
     # try status and throw if forbidden is encountered
     try:
         getPage = requests.get(pageURL)
         getPage.raise_for_status()
     except requests.exceptions.HTTPError as err: 
-        # in case of forbidden access URL 
         print('Accessed a Forbidden URL/URL with error status, return false')
         return False
     except requests.exceptions.Timeout:
-        # Maybe set up for a retry, or continue in a retry loop
         print('Timeout occured, check FTP site status manually')
         return False
     except requests.exceptions.TooManyRedirects:
-        # Tell the user their URL was bad and try a different one
         print('Too many re-directs, check FTP site status manually')
         return False
     except requests.exceptions.RequestException as e:
-        # catastrophic error. bail.
         print('Catostrophic error, bail execution due to RequestException')
         return False
   
@@ -186,9 +181,6 @@ def searchForKeyword(pageURL, keyWord):
     
     # loop through the a_categories to get rid of irreleveant matches like parent dir
     # Also eliminate the Name, Last modified, size from the list to reduce search confusion
-        
-    # before filtering - debugging
-    # print(a_categories)
     
     for link in a_categories:
         
@@ -196,7 +188,6 @@ def searchForKeyword(pageURL, keyWord):
         # parent directory, name, last modified, size, description
         
         # Note: the filter assumes uniformity per every page for its a-class titles
-
         # want to eliminate the possibility of lower case misses -> make whole thing lower
         if 'Parent Directory' in str(link):
             # remove this link from the a_categories_modified
@@ -205,27 +196,17 @@ def searchForKeyword(pageURL, keyWord):
             # remove related categories that do not contribute to search, aka redundant categories
             a_categories_modified.remove(link)
     
-    
-    # after filtering - debugging
-    # print(a_categories_modified)
-    
-    # define default boolean which will be switched on if found
+    # switch when found
     available = False
-
     
     # search the modified list of valid links, including files
     for link in a_categories_modified:
         # fetch the a class name of the link
         current_string_check = link.get('href')
-        
-        # print search - debugging
-        # print(str(current_string_check).lower())
-        
         if keyWord in str(current_string_check).lower():
             # if given a year, must check if in URL too
-            if selected_a_year == True:
+            if selected_a_year:
                 if year_keyword in pageURL:
-                    # print('TESTING: year '+ str(pageURL))
                     available = True
                     break
             else:
@@ -251,7 +232,7 @@ def searchForKeyword(pageURL, keyWord):
             # if the counter matches arr size -> must be true for all substrings
             # therefore the keyword is found
             if len(split) == counter_found:
-                if selected_a_year == True:
+                if selected_a_year:
                     if year_keyword in pageURL:
                         # print('TESTING: year in '+ str(pageURL))
                         available = True
@@ -259,22 +240,13 @@ def searchForKeyword(pageURL, keyWord):
                 else:
                     available = True
                     break
-                
-
-    # print('Process finished for:' + pageURL)
-    # print('For input word in the given dir, "' + keyWord + '", its existence is')
-    # print('Entered keyword function')
             
-    # If key offering found, return true
-    if available == True:
-        return True
-
-    # Otherwise, return false 
-    else:
-        return False
+    # return if available
+    assert isinstance(available, bool), "available var is not boolean, check procedure"
+    return available 
     
 
-def crawler(currPageURL, keyword, depth):
+def crawler(currPageURL, keyword, depth, selected_a_year, year_keyword):
     """
         # crawler() function
         # Description: 
@@ -300,12 +272,6 @@ def crawler(currPageURL, keyword, depth):
         print('')
         # append the URL to arr
         # found_URL_matches.append(currPageURL)
-        
-        # TEMPORARY
-        # print('')
-        # print('Raise system exit to quit, this forcefully halts program')
-        # print('')
-        # raise SystemExit
         
     # now for every directory, append -> create URL -> recurse
     # make sure to update the stored ver 
@@ -368,7 +334,7 @@ def crawler(currPageURL, keyword, depth):
             new_URL_to_recurse = currPageURL + actual_URL
             
             # CONDITIONAL YEAR CHECK - perform only if the user picked a year
-            if selected_a_year == True:
+            if selected_a_year:
                 # count slashes: if seven or more, it now must have the year to do a search
                 if new_URL_to_recurse.count('/') >= depth:
                     if year_keyword not in actual_URL:
