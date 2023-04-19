@@ -22,7 +22,8 @@ depth = # search depth
 
 # FUNCTION DEFINITIONS
 
-# @TODO: SET DEFAULTS
+# @TODO: FIX PASSED ARRS
+# @TODO: FIX KEYWORD RELIANCE - but still enable search if wanted...
 def mainCrawler(keyword=None, gacc_keyword, year_keyword='0', depth=8):
     """ Crawl NIFC FTP server for best fire match 
         keyword: NONE (esp for most FEDS perims assume none)
@@ -37,7 +38,7 @@ def mainCrawler(keyword=None, gacc_keyword, year_keyword='0', depth=8):
     # result arr
     found_array = []
     # apply keyword search?
-    keyword_processing = True
+    keyword_processing = False
     
     if keyword is not None:
         keyword_processing = True

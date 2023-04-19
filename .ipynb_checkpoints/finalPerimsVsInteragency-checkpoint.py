@@ -35,20 +35,16 @@ data_all = pd.concat([gpd.read_file(file) for file in files],ignore_index=True)
 
 # @TODO: call path validity checks after f complete
 
-# @TODO: regex which starts with "F4655"
-# break down paths for s3 check
-# directory = 'projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/'
-# object_file = '*4655*'
+# if want to use extent set
+geojson_use = True
+geojson_keyword = 'WILLIAMS FLATS' 
 
-# @TODO: FINISH JSON IMPLEMENTATION
-geojson_use = True # boolean to trigger glo geoj read instead of perims
-
-
+default_crs = 'epsg:9311' # universal crs for all geoms
 use_final = False
 layer = 'perimeter'
 ascending = False # NOTE: use var as indicator for plot ordering
 date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) 
-curr_dayrange = 1 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
+curr_dayrange = 6 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
 unit_preference = 'metre' # unit of choice @TODO double check plot impact
 apply_Wildfire_Final_Perimeter = False # apply the NIFC label - WARNING: unreliable given inconsistency
 simplify_tolerance = 100 # user selected tolerance upper bound
@@ -140,15 +136,12 @@ def error_calc_nifc():
 # MAIN CODE 
 
 # change the global options that Geopandas inherits from
+# gpd method (comp. slower)
 pd.set_option('display.max_columns',None)
 
-if geojson_use:
-    df = data_all[data_all['Name']=='BEAVER CREEK'].copy()
-    usa = gpd.read_file(usa_path)
-else:
-    # gpd method (comp. slower)
-    df = gpd.read_file(perims_path)
-    usa = gpd.read_file(usa_path)
+# read nifc perims + us
+df = gpd.read_file(perims_path)
+usa = gpd.read_file(usa_path)
 
 # basic filtering
 # remove none geometry 
@@ -160,33 +153,41 @@ finalized_perims = non_null
 if apply_Wildfire_Final_Perimeter:
     finalized_perims = non_empty[non_empty.FEATURE_CA == 'Wildfire Final Perimeter']
 
-# Williams ID based path
-lf_files = glob.glob(williams_final_path)
-# unique lf ids if more than one, but works with only one too!
-lf_ids = list(set([file.split('Largefire/')[1].split('_')[0] for file in lf_files])) 
-print('Number of LF ids:',len(lf_ids)) # Should be one, just william's flats
+if geojson_use:
+    # check selected key in list
+    all_names = data_all['Name'].tolist()
+    assert geojson_keyword in all_names, "Selected geojson_keyword not in GeoJson, check constants."
+    # read geojson
+    gdf = data_all[data_all['Name']==geojson_keyword].copy()
+    gdf = gdf.sort_values(by='t',ascending=ascending)
+else: 
+    # Williams ID based path
+    lf_files = glob.glob(williams_final_path)
+    # unique lf ids if more than one, but works with only one too!
+    lf_ids = list(set([file.split('Largefire/')[1].split('_')[0] for file in lf_files])) 
+    print('Number of LF ids:',len(lf_ids)) # Should be one, just william's flats
 
-# save set of fire(s) into single var depending on mode
+    # save set of fire(s) into single var depending on mode
 
-print('VERBOSE: print lf_ids')
-print(lf_ids)
-print('LAST ELEMENT OF LIST')
-print(lf_ids[-1])
-print('BUG: returning empty list... fire doesnt seem to exist...')
+    print('VERBOSE: print lf_ids')
+    print(lf_ids)
+    print('LAST ELEMENT OF LIST')
+    print(lf_ids[-1])
+    print('BUG: returning empty list... fire doesnt seem to exist...')
 
-# temporary check
-assert len(lf_ids) != 0, "lf_ids is empty, halt algorithm."
+    # temporary check
+    assert len(lf_ids) != 0, "lf_ids is empty, halt algorithm."
 
-# extract latest entry by ID
-largefire_dict = dict.fromkeys(lf_ids)
+    # extract latest entry by ID
+    largefire_dict = dict.fromkeys(lf_ids)
 
-for lf_id in lf_ids:
-    most_recent_file = [file for file in lf_files if lf_id in file][-1]
-    largefire_dict[lf_id] = most_recent_file
+    for lf_id in lf_ids:
+        most_recent_file = [file for file in lf_files if lf_id in file][-1]
+        largefire_dict[lf_id] = most_recent_file
 
-gdf = gpd.read_file(largefire_dict[lf_id],layer=layer)
-# sort by descending time (latest to newest)
-gdf = gdf.sort_values(by='t',ascending=ascending)
+    gdf = gpd.read_file(largefire_dict[lf_id],layer=layer)
+    # sort by descending time (latest to newest)
+    gdf = gdf.sort_values(by='t',ascending=ascending)
 
 if use_final:
     print('BENCHMARKING: FINAL PERIM V. MODE')
@@ -224,19 +225,28 @@ else:
 # print(finalized_williams.t.tolist())
 
         
-# adjust CRS - assumes uniform crs
+# adjust CRS - nifc
+# default_crs
 try:
-    print('Attempting set_crs...')
-    finalized_perims.set_crs(finalized_williams.crs)
+    print('Attempting set_crs (nifc)...')
+    finalized_perims.set_crs(default_crs)
 except: 
     print('Failure: attempting to_crs application')
-    print(finalized_williams.crs)
-    finalized_perims = finalized_perims.to_crs(finalized_williams.crs)
+    finalized_perims = finalized_perims.to_crs(default_crs)
     print(finalized_perims.crs)
+
+# adjust FEDS crs 
+try:
+    print('Attempting set_crs (FEDS)...')
+    finalized_williams.set_crs(default_crs)
+except: 
+    print('Failure: attempting to_crs application')
+    finalized_williams = finalized_williams.to_crs(default_crs)
+    print(finalized_williams.crs)
 
 # unit/crs check
 assert finalized_williams.crs == finalized_perims.crs, "CRS mismatch"
-assert finalized_williams.crs.axis_info[0].unit_name == unit_preference, f"finalized_williams fails unit check for: {unit_preference}"
+assert finalized_williams.crs.axis_info[0].unit_name == unit_preference, f"finalized_williams fails unit check for: {unit_preference}, current units: {finalized_williams.crs.axis_info[0].unit_name}"
 assert finalized_perims.crs.axis_info[0].unit_name == unit_preference, f"finalized_perims fails unit check for: {unit_preference}"
 
 # filter by year if year available
