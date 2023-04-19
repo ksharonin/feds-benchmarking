@@ -27,15 +27,23 @@ from osgeo import ogr
 # CONSTANTS
 perims_path = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
 williams_final_path = '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*'
-# @TODO: call path validity checks after f complete
+usa_path = "/projects/my-public-bucket/USAShapeFile"
 
+# alternative reading
+files = glob.glob("/projects/shared-buckets/ashiklom/WesternUS/files_for_paper/*_.geojson")
+data_all = pd.concat([gpd.read_file(file) for file in files],ignore_index=True)
+
+# @TODO: call path validity checks after f complete
 
 # @TODO: regex which starts with "F4655"
 # break down paths for s3 check
 # directory = 'projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/'
 # object_file = '*4655*'
 
-usa_path = "/projects/my-public-bucket/USAShapeFile"
+# @TODO: FINISH JSON IMPLEMENTATION
+geojson_use = True # boolean to trigger glo geoj read instead of perims
+
+
 use_final = False
 layer = 'perimeter'
 ascending = False # NOTE: use var as indicator for plot ordering
@@ -43,15 +51,15 @@ date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. da
 curr_dayrange = 1 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
 unit_preference = 'metre' # unit of choice @TODO double check plot impact
 apply_Wildfire_Final_Perimeter = False # apply the NIFC label - WARNING: unreliable given inconsistency
+simplify_tolerance = 100 # user selected tolerance upper bound
 
 # FUNCTION DEFINITIONS
 
 # @TODO: FINISH CHECK -add s3 path/validity check w boto3
 def path_exists(path, ptype):
     """ Check if path exists (regular OS or s3)
-        path == url to check
-        ptype == "reg" vs "s3"
-    
+            path == url to check
+            ptype == "reg" vs "s3"
         return: boolean
     """
     
@@ -77,11 +85,8 @@ def path_exists(path, ptype):
 def get_nearest(dataset, timestamp, dayrange=0):
     """ Identify rows of dataset with timestamp matches;
         expects year, month, date in datetime format
-        
-        dataset: input dataset to search for closest match
-        timestamp: timestamp we want a close match for
-        @TODO: dayrange: 0 (only self day) -> 7 (7 days ahead/behind)
-        
+            dataset: input dataset to search for closest match
+            timestamp: timestamp we want a close match for
         returns: dataset with d->m->y closest matches
     """
     assert dayrange < 8, "Excessive provided day range; select smaller search period."
@@ -110,10 +115,26 @@ def get_nearest(dataset, timestamp, dayrange=0):
     return finalized
 
 # @TODO: implement reduce/simplify geom
-def simplify_geometry(shape, removal):
-    # geopandas.GeoSeries.simplify(tolerance, preserve_topology)
-    # shapely: object.simplify(tolerance, preserve_topology=True)
+def simplify_geometry(shape, tolerance):
+    # keep preserve_topology as default (true)
+    assert isinstance(shape, gpd.GeoDataFrame)
+    return shape.geometry.simplify(tolerance)
+
+# @TODO: implement recursive function on 
+def best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance):
+    if base_tolerance == 0:
+        return top_tolerance
     
+    # reduce for recursive case
+    base_tolerance -= 1
+    return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance)
+
+# @TODO: implement error calculation relative to FEDS output
+def error_calc_feds():
+    return None
+
+# @TODO: implement error calculation relative to outside source (nifc)
+def error_calc_nifc():
     return None
 
 # MAIN CODE 
@@ -121,9 +142,13 @@ def simplify_geometry(shape, removal):
 # change the global options that Geopandas inherits from
 pd.set_option('display.max_columns',None)
 
-# gpd method (comp. slower)
-df = gpd.read_file(perims_path)
-usa = gpd.read_file(usa_path)
+if geojson_use:
+    df = data_all[data_all['Name']=='BEAVER CREEK'].copy()
+    usa = gpd.read_file(usa_path)
+else:
+    # gpd method (comp. slower)
+    df = gpd.read_file(perims_path)
+    usa = gpd.read_file(usa_path)
 
 # basic filtering
 # remove none geometry 
@@ -290,9 +315,11 @@ for instance in tqdm(range(finalized_williams.shape[0])):
         # single match -> append (perim instance, NIFC single match)
         comparison_pairs.append((finalized_williams.iloc[[instance]], intersd[0]))
 
-# @NOTE: consider reworking store situation
-# iterating over list can be time consuming for feds perims
+# @NOTE: consider reworking store situation - iterating over list can be time consuming for feds perims
 error_percent_performance = []
+# @TODO: store corresponding performance per single difference
+makeup_feds = []
+makeup_nifc = [] 
   
 
 # @TODO ACCURACY CALCULATION: per pair run comparison
@@ -309,8 +336,10 @@ for nifc_perim_pair in comparison_pairs:
         continue
     
     sym_diff = perim_inst.symmetric_difference(nifc_inst, align=False)
+    
     # use item() to fetch int out of values
     assert sym_diff.shape[0] == 1, "Multiple sym_diff entries identified; pair accuracy evaluation will fail."
+    
     # calculate error percent: (difference / "correct" shape aka nifc)*100
     error_percent = (sym_diff.geometry.area.item() / nifc_inst.geometry.area.item())*100
     # align calculations by index -> zip n store at end
