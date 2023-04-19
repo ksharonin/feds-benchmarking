@@ -61,7 +61,9 @@ else:
     # sort by descending time (latest to newest)
     gdf = gdf.sort_values(by='t',ascending=ascending)
 
-
+# crs catch/corrections
+# @TODO: expand later to fix crs mismatches
+assert gacc_boundaries.crs == gdf.crs, "mismatch crs"
     
 # reduce to GACC region - intersect w/ boundaries
 gacc_path = '/projects/my-public-bucket/gaccRegions'
