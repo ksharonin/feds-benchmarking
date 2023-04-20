@@ -37,7 +37,7 @@ data_all = pd.concat([gpd.read_file(file) for file in files],ignore_index=True)
 
 # if want to use extent set
 geojson_use = True
-geojson_keyword = 'DIXIE' # 'WILLIAMS FLATS' 
+geojson_keyword = 'WILLIAMS FLATS' # 'KINCADE' # 'WILLIAMS FLATS' 
 
 default_crs = 'epsg:4326' #'epsg:9311' # universal crs for all geoms
 unit_dict = {'epsg:9311': 'metre', 'epsg:4326':'degree'}
@@ -47,7 +47,7 @@ use_final = False
 layer = 'perimeter'
 ascending = False # NOTE: use var as indicator for plot ordering
 date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) 
-curr_dayrange = 2 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
+curr_dayrange = 3 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
 
 apply_Wildfire_Final_Perimeter = False # apply the NIFC label - WARNING: unreliable given inconsistency
 simplify_tolerance = 100 # user selected tolerance upper bound
@@ -219,6 +219,13 @@ else:
         mul_years = True
         # start edge case
         # @TODO: update handling of edge case for filtering
+        # print(f'all picked up timestamps: {finalized_williams.t.tolist()}')
+        # iterate and print years for mismatch
+        for l in range(finalized_williams.shape[0]):
+            year_fetch = finalized_williams.iloc[[l]].t.item().year
+            if year_fetch != sample_year:
+                print(f'failed year: sample was {sample_year} while {year_fetch} was detected.')
+            
         assert not mul_years, "@TODO: catch edge case for years; force halt for now."
 
 # print('VERBOSE: DEBUGGING MODE')
