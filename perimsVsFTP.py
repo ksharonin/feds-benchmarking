@@ -75,17 +75,20 @@ ftp_names = ["alaska", "calif_n", "calif_s", "eastern", "great_basin", "n_rockie
 ftp_names_reordered = ["calif_s", "southwest", "great_basin", "rocky_mtn", "alaska", "pacific_nw", "n_rockies", "calif_n", "eastern", "southern"] 
 assert ftp_names.sort() == ftp_names_reordered.sort(), "Extra check if any spell errors occured"
 
-# @TODO: REORDER FTP NAMES TO MATCH GACC BOUNDARY LISTINGS
+# map gaccIDs from geo <-> ftp search words
 gacc_name_dict = dict(gacc_boundaries, ftp_names_reordered)
 
-# @TODO: intersect and run - select w/ geoanalysis
+# intersect fire to find GACC region
 final_gacc_region = None 
-
-# @TODO: catch edge case of multiple NIFC regions -> throw and request manual search
-
+intersection_main = gpd.overlay(gacc_boundaries, gdf, how='intersection')
+assert not intersection_main.empty, "Empty dataframe, no intersection; visually inspect - if fire is global, it may be out of bounds for FTP match program"
+all_abbrevs = intersection_main.GACCAbbrev.tolist()
+num_unique = len(np.unique(all_abbrevs))
+assert num_unique == 1, "More than one abbrev recieved -> NIFC edgecase detected. Manual search required."
 
 if final_gacc_region is None:
     gacc_keyword = 'unsure'
+    assert 1 == 0, "Forced stop; no GACC decided, manual search required since fire is potentially global/non-us"
 
 # @TODO: extract year from large fire
 

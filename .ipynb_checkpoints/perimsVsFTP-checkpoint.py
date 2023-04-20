@@ -80,9 +80,11 @@ gacc_name_dict = dict(gacc_boundaries, ftp_names_reordered)
 
 # @TODO: intersect and run - select w/ geoanalysis
 final_gacc_region = None 
-
-# @TODO: catch edge case of multiple NIFC regions -> throw and request manual search
-
+intersection_main = gpd.overlay(gacc_boundaries, gdf, how='intersection')
+assert not intersection_main.empty, "Empty dataframe, no intersection; visually inspect - if fire is global, it may be out of bounds for FTP match program"
+all_abbrevs = intersection_main.GACCAbbrev.tolist()
+num_unique = len(np.unique(all_abbrevs))
+assert num_unique == 1, "More than one abbrev recieved -> NIFC edgecase"
 
 if final_gacc_region is None:
     gacc_keyword = 'unsure'

@@ -37,7 +37,7 @@ data_all = pd.concat([gpd.read_file(file) for file in files],ignore_index=True)
 
 # if want to use extent set
 geojson_use = True
-geojson_keyword = 'BOULDER' # 'WILLIAMS FLATS' 
+geojson_keyword = 'DIXIE' # 'WILLIAMS FLATS' 
 
 default_crs = 'epsg:4326' #'epsg:9311' # universal crs for all geoms
 unit_dict = {'epsg:9311': 'metre', 'epsg:4326':'degree'}
@@ -388,7 +388,7 @@ print(f'{count_100} instances of 100% error')
 print('FEDS output perimeter dates with no matches by threshold:')
 print(count_100_dates)
 
-# @TODO: implement proper units
+# @TODO: implement proper units -> currently list w/ switch cases
     
 # @TODO: ideal storage ideas? 
 # idea: generate ipynb for visualization? 
