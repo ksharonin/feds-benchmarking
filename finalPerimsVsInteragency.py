@@ -47,7 +47,7 @@ use_final = False
 layer = 'perimeter'
 ascending = False # NOTE: use var as indicator for plot ordering
 date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) 
-curr_dayrange = 3 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
+curr_dayrange = 5 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
 
 apply_Wildfire_Final_Perimeter = False # apply the NIFC label - WARNING: unreliable given inconsistency
 simplify_tolerance = 100 # user selected tolerance upper bound
@@ -113,14 +113,28 @@ def get_nearest(dataset, timestamp, dayrange):
     
     return finalized
 
-# @TODO: implement reduce/simplify geom
+# reduce/simplify geom
 def simplify_geometry(shape, tolerance):
+    """ shape: to simplify
+        tolerance: passed to shapely tol
+        return: simplified shape
+    """
     # keep preserve_topology as default (true)
     assert isinstance(shape, gpd.GeoDataFrame)
     return shape.geometry.simplify(tolerance)
 
-# @TODO: implement recursive function on 
-def best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance):
+# @TODO: finish implementing recursive function on simplification calc
+def best_simplification(feds, nifc, top_performance=1000000, top_tolerance, base_tolerance, calc_method):
+    """ feds: feds source
+        nifc: external source to compare to
+        top_performance: best numeric value (default is worst value aka > 100 % error)
+        top_tolerance: corresponding simplification with best performance
+        base_tolerance: counter for tracking progress from limit -> 0
+        calc_method
+        
+        return: top_tolerance (best tolerance value from recursion)
+    
+    """
     if base_tolerance == 0:
         return top_tolerance
     
@@ -173,12 +187,6 @@ else:
 
     # save set of fire(s) into single var depending on mode
 
-    print('VERBOSE: print lf_ids')
-    print(lf_ids)
-    print('LAST ELEMENT OF LIST')
-    print(lf_ids[-1])
-    print('BUG: returning empty list... fire doesnt seem to exist...')
-
     # temporary check
     assert len(lf_ids) != 0, "lf_ids is empty, halt algorithm."
 
@@ -214,7 +222,8 @@ else:
     # check year uniformity
     sample_year = finalized_williams.iloc[[0]].t.max().year
     year_matching = [sample_year ==  finalized_williams.iloc[[j]].t.max().year for j in range(finalized_williams.shape[0])]
-    # if there was any mismatch, flag for difference
+    
+    # if there was any mismatch, flag for difference (mul years)
     if False in year_matching:
         print('WARNING: Current LargeFire contains 2+ years; NIFC filtering impacted.')
         mul_years = True
@@ -228,6 +237,10 @@ else:
                 print(f'failed year: sample was {sample_year} while {year_fetch} was detected.')
             
         assert not mul_years, "@TODO: catch edge case for years; force halt for now."
+    
+    # else: single year
+    assert isinstance(sample_year, int), "sample year fails type match"
+    extracted_year = sample_year
 
 # print('VERBOSE: DEBUGGING MODE')
 # print('full set of gdf')
@@ -264,10 +277,12 @@ assert finalized_perims.crs.axis_info[0].unit_name == unit_preference, f"finaliz
 try:
     extracted_year
     year_perims = finalized_perims[finalized_perims.FIRE_YEAR == str(extracted_year)]
+    
 except NameError:
     print('WARNING: No year extracted from FEDS output. Setting to None. No year reduction applied.')
     extracted_year = None 
     year_perims = finalized_perims
+    assert 1==0, "force stop -> make algorithm rely on year? otherwise doesnt seem efficient"
 
 # root out none types
 year_perims['DATE_NOT_NONE'] = year_perims.apply(lambda row : row.DATE_CUR is not None, axis = 1)
@@ -281,7 +296,6 @@ try:
 except TypeError as e: 
     # if none detected, missed by filtering - check non existence
     print('Invalid type passed for lenght validation; check for Nones in set')
-    
 
 # transform NIFC str to new datetime object
 cur_format = '%Y%m%d' 
@@ -298,24 +312,71 @@ for instance in tqdm(range(finalized_williams.shape[0])):
     # @TODO: store all non-zero intersections -> get nearest time stamp set (?)
     # dont want to eliminate all matches that are one day apart
     
+    # collection of indices relative to year_perims
+    insc_indices = []
+    # master matches with intersections/timestemp filtering
+    intersd = []
+    
+    # iterate on all year_perims and inersect
+    for insc in range(year_perims.shape[0]):
+        # fetch nifc instance
+        curr_nifc = year_perims.iloc[[insc]]
+        intersect = gpd.overlay(curr_nifc,finalized_williams.iloc[[instance]], how='intersection')
+        # cont if empty
+        if not intersect.empty:
+            insc_indices.append(insc)
+        # else: continue
+    
+    if len(insc_indices) == 0:
+        print('WARNING: insc_indices was none -> skipping step')
+        continue
+    
+    # all current indices present get_nearest check opportunities
+    # @TODO: change the get_nearest to apply for month...?
+    timestamp = finalized_williams.iloc[[instance]].t
+    # apply insc_indices to pick out intersect matches
+    reduced = year_perims.take(insc_indices)
+    # match run with get nearest
+    # although its really picky -> try for now
+    
+    print(f'VERBOSE: reduced: {reduced}, timestamp: {timestamp}')
+    try:
+        matches = get_nearest(reduced, timestamp, curr_dayrange)
+    except:
+        # print('WARNING get_nearest failed: continue in instance comparison')
+        # indicates no match in given range -> append to failure list 
+        print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
+        comparison_pairs.append((finalized_williams.iloc[[instance]], None))
+        continue
+        
+    # all matches should act as intersd -> extract from DF
+    if matches is None:
+        # @TODO: improve handling -> likely just continue and report failed benching
+        raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
+        
+    intersd = [matches.iloc[[ing]] for ing in range(matches.shape[0])]
     
     # --------
     
+    """
     # extract time stamp
     timestamp = finalized_williams.iloc[[instance]].t
     
     # query matching nifc with year-month-day form
     # year-month-day matches
     matches = get_nearest(year_perims, timestamp, curr_dayrange)
+    """
     
     if matches is None:
         # @TODO: improve handling -> likely just continue and report failed benching
         raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
         
     # intersect closest day matches - ideally size one
+    """
     intersd = []
     # find all matches with intersections 
     # for a_match in matches:
+    
     for a_m in range(matches.shape[0]):
     
         # set using index
@@ -326,12 +387,13 @@ for instance in tqdm(range(finalized_williams.shape[0])):
         if not resulting.empty:
             # @NOTE: do NOT append the intersection; want original object only
             intersd.append(a_match)
+    """
     
     if len(intersd) == 0:
-        print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
-        comparison_pairs.append((finalized_williams.iloc[[instance]], None))
+        # print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
+        # comparison_pairs.append((finalized_williams.iloc[[instance]], None))
+        assert 1==0, "case shouldn't exist, throw exception"
         
-    
     elif len(intersd) > 1:
         # if multiple have overlay -> store them with a warning 
         print(f'NOTICE: More thane 1, in total: {len(matches)} NIFC date matches, intersect with perimeter master row ID: {finalized_williams.iloc[[instance]].index} with index in finalized_willaims: {instance}, storing all as pairs')
