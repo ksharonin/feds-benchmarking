@@ -81,7 +81,7 @@ def path_exists(path, ptype):
         # @TODO: run regular os check
         return False
 
-def get_nearest(dataset, timestamp, dayrange=0):
+def get_nearest(dataset, timestamp, dayrange):
     """ Identify rows of dataset with timestamp matches;
         expects year, month, date in datetime format
             dataset: input dataset to search for closest match
@@ -154,6 +154,7 @@ non_null = non_empty[non_empty.GIS_ACRES != 0]
 finalized_perims = non_null
 # NOTE: filtering by 'final' label established by NIFC is UNRELIABLE!
 if apply_Wildfire_Final_Perimeter:
+    print(f'WARNING: {apply_Wildfire_Final_Perimeter} is true; may severely limit search results.')
     finalized_perims = non_empty[non_empty.FEATURE_CA == 'Wildfire Final Perimeter']
 
 if geojson_use:
@@ -293,6 +294,13 @@ comparison_pairs = []
 # per FEDS output perim -> get best NIFC match(es) by date
 print('Per FEDS output, identify best NIFC match...')
 for instance in tqdm(range(finalized_williams.shape[0])):
+    # @TODO: run intersection first with all year_perims
+    # @TODO: store all non-zero intersections -> get nearest time stamp set (?)
+    # dont want to eliminate all matches that are one day apart
+    
+    
+    # --------
+    
     # extract time stamp
     timestamp = finalized_williams.iloc[[instance]].t
     

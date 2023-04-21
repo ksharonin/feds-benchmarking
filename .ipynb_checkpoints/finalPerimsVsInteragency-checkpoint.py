@@ -81,7 +81,7 @@ def path_exists(path, ptype):
         # @TODO: run regular os check
         return False
 
-def get_nearest(dataset, timestamp, dayrange=0):
+def get_nearest(dataset, timestamp, dayrange):
     """ Identify rows of dataset with timestamp matches;
         expects year, month, date in datetime format
             dataset: input dataset to search for closest match
@@ -154,6 +154,7 @@ non_null = non_empty[non_empty.GIS_ACRES != 0]
 finalized_perims = non_null
 # NOTE: filtering by 'final' label established by NIFC is UNRELIABLE!
 if apply_Wildfire_Final_Perimeter:
+    print(f'WARNING: {apply_Wildfire_Final_Perimeter} is true; may severely limit search results.')
     finalized_perims = non_empty[non_empty.FEATURE_CA == 'Wildfire Final Perimeter']
 
 if geojson_use:
