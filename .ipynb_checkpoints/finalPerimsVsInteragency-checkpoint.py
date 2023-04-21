@@ -138,8 +138,19 @@ def best_simplification(feds, nifc, top_performance=1000000, top_tolerance, base
     if base_tolerance == 0:
         return top_tolerance
     
-    # reduce for recursive case
+    # calculate performance
+    simplified_feds = simplify_geometry(feds, base_tolerance)
+    
+    # @TODO: make sure regardless of calc, order is proper
+    curr_performance = calc_method(simplified_feds, nifc)
+    # if performance better -> persist
+    if curr_performance < top_performance:
+        top_performance = curr_performance
+        top_tolerance = base_tolerance
+    
+    # reduce and keep recursing down
     base_tolerance -= 1
+    
     return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance)
 
 # @TODO: implement error calculation relative to FEDS output

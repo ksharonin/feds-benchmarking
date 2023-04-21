@@ -12,6 +12,11 @@ print('This program will take your keyword and start from the the Incident Speci
 print('Sample inputs: "Fort Huachuca", "Avenza", "Melozitna", "Dixie", "Contact Creek" \n')
 print('WARNING: BE SURE TO CHECK ALL CONSTANTS')
 
+# workflow:
+# callerCrawler (filters given arguments -> calls subsequent actual crawlers) ->
+# crawler (actual recurse function) vs. gaccYearCrawler (recurse with no keyword functionality) ->
+# searchForKeyword (boolean for crawler to continue)
+
 # CONSTANTS
 
 # consts, parse from func call
@@ -23,7 +28,7 @@ depth = # search depth
 # FUNCTION DEFINITIONS
 
 # @TODO: define pure year/gacc basic crawler
-def elementaryCrawler(gacc_keyword, year_keyword='0', depth=8):
+def gaccYearCrawler(gacc_keyword, year_keyword='0', depth=8):
     """ crawler for year/gacc based search only
     """
     # select gacc keyword based region folders
@@ -34,7 +39,7 @@ def elementaryCrawler(gacc_keyword, year_keyword='0', depth=8):
 
 # @TODO: FIX PASSED ARRS
 # @TODO: FIX KEYWORD RELIANCE - but still enable search if wanted...
-def mainCrawler(keyword=None, gacc_keyword, year_keyword='0', depth=8):
+def callerCrawler(keyword=None, gacc_keyword, year_keyword='0', depth=8):
     """ Crawl NIFC FTP server for best fire match 
         keyword: NONE (esp for most FEDS perims assume none)
         gacc_keyword: identified gacc region (perimsVsFTP should identify via intersect)
