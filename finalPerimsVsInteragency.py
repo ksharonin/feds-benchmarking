@@ -18,39 +18,18 @@ from shapely.geometry import Point
 from folium import plugins
 warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
 from datetime import datetime
-from tqdm import tqdm # add in progress watch
+from tqdm import tqdm
 from matplotlib import pyplot as plt
 from osgeo import ogr
 
-# @NOTE: rename "finalized_williams" var to elim confusion for generalized v.
+# dev notes/todos:
+# @TODO: rename "finalized_williams" var to elim confusion for generalized v.
+# @TODO: call path validity checks/finish path check
+# @TODO: create/add in CRS mapping dictionary
+# @TODO: test run simplify + use PerimConsts.simplify_tolerance for control
 
 # CONSTANTS
-perims_path = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
-williams_final_path = '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*'
-usa_path = "/projects/my-public-bucket/USAShapeFile"
-
-# alternative reading
-files = glob.glob("/projects/shared-buckets/ashiklom/WesternUS/files_for_paper/*_.geojson")
-data_all = pd.concat([gpd.read_file(file) for file in files],ignore_index=True)
-
-# @TODO: call path validity checks after f complete
-
-# if want to use extent set
-geojson_use = True
-geojson_keyword = 'WILLIAMS FLATS' # 'KINCADE' # 'WILLIAMS FLATS' 
-
-default_crs = 'epsg:4326' #'epsg:9311' # universal crs for all geoms
-unit_dict = {'epsg:9311': 'metre', 'epsg:4326':'degree'}
-unit_preference = unit_dict[default_crs] # unit of choice @TODO double check plot impact
-
-use_final = False
-layer = 'perimeter'
-ascending = False # NOTE: use var as indicator for plot ordering
-date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) 
-curr_dayrange = 5 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
-
-apply_Wildfire_Final_Perimeter = False # apply the NIFC label - WARNING: unreliable given inconsistency
-simplify_tolerance = 100 # user selected tolerance upper bound
+import PerimConsts
 
 # FUNCTION DEFINITIONS
 
@@ -124,7 +103,7 @@ def simplify_geometry(shape, tolerance):
     return shape.geometry.simplify(tolerance)
 
 # @TODO: finish implementing recursive function on simplification calc
-def best_simplification(feds, nifc, top_performance=1000000, top_tolerance, base_tolerance, calc_method):
+def best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance, calc_method):
     """ feds: feds source
         nifc: external source to compare to
         top_performance: best numeric value (default is worst value aka > 100 % error)
@@ -153,13 +132,92 @@ def best_simplification(feds, nifc, top_performance=1000000, top_tolerance, base
     
     return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance)
 
-# @TODO: implement error calculation relative to FEDS output
-def error_calc_feds():
-    return None
+# @TODO: implement error calculation according to yang's figs
 
-# @TODO: implement error calculation relative to outside source (nifc)
-def error_calc_nifc():
-    return None
+# terms:
+# FEDS data are considered as the predicted class. 
+# TN: True Negative; FN: False Negative; FP: False Positive; 
+# TP: True Positive; FEDS_UB: Unburned area from FEDS; 
+# FEDS_B: Area burned from FEDS; FRAP_UB: Unburned area from FRAP; 
+# FRAP_B: Burned area from FRAP; AREA_TOTAL: Total land area in California.
+
+def ratioCalculation(feds_inst, nifc_inst):
+    """ Calculate ratio defined in table 6:	
+        FEDS_B/REF_B(urned area)
+    """
+    feds_area = feds_inst.geometry.area.item()
+    nifc_area = nifc_inst.geometry.area.item()
+    
+    assert feds_area is not None, "None type detected for area; something went wrong"
+    assert nifc_area is not None, "None type detected for area; something went wrong"
+    
+    return feds_area / nifc_area
+
+def accuracyCalculation():
+    """ Calculate accuracy defined in table 6:
+        (TP+TN)/AREA_TOTAL
+        
+        TN == ???
+        TP == FRAP + FEDS agree on burned (intersect)
+    """
+    
+    return 0
+
+# @TODO: call percision calculation func
+def precisionCalculation(feds_inst, nifc_inst):
+    """ TP/FEDS_B
+        TP == FRAP + FEDS agree on burned (intersect)
+        FEDS_B == all burned of feds 
+    """
+    assert isinstance(feds_inst, pd.DataFrame) and isinstance(nifc_inst, pd.DataFrame), "Object types will fail intersection calculation; check inputs"
+    # calculate intersect (agreement) -> divide
+    TP = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    feds_area = feds_inst.geometry.area.item()
+    
+    return TP / feds_area
+
+def recallCalculation(feds_inst, nifc_inst):
+    """ TP/REF_B (nifc)
+        TP == FRAP + FEDS agree on burned (intersect)
+        REF_B == all burned of nifc/source
+    """
+    TP = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    nifc_area = nifc_inst.geometry.area.item()
+    
+    return TP / nifc_area
+
+def IOUCalculation(feds_inst, nifc_inst):
+    """ IOU (inter over union)
+        TP/(TP + FP + FN)
+    """
+    TP = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    FP = 0 # feds + nifc agree on no burning
+    FN = 0 # feds thinks unburned when nifc burned
+    
+    return 0
+
+def f1ScoreCalculation(feds_inst, nifc_inst):
+    """ 2 * (Precision * Recall)/(Precision + Recall)
+    """
+    precision = precisionCalculation(feds_inst, nifc_inst)
+    recall = recallCalculation(feds_inst, nifc_inst)
+    calc = 2 * (precision*recall)/(precision+recall)
+    
+    return calc
+
+# @TODO: custom calc functions
+def symmDiffRatioCalculation(feds_inst, nifc_inst):
+    """ symmetric difference calc, ratio 
+        NOTE: error relative to NIFC/external soure
+    """
+    sym_diff = feds_inst.symmetric_difference(nifc_inst, align=False)
+    # use item() to fetch int out of values
+    assert sym_diff.shape[0] == 1, "Multiple sym_diff entries identified; pair accuracy evaluation will fail."
+    # calculate error percent: (difference / "correct" shape aka nifc)
+    symmDiff_ratio = sym_diff.geometry.area.item() / nifc_inst.geometry.area.item()
+    
+    return symmDiff_ratio
+
 
 # MAIN CODE 
 
@@ -168,30 +226,30 @@ def error_calc_nifc():
 pd.set_option('display.max_columns',None)
 
 # read nifc perims + us
-df = gpd.read_file(perims_path)
-usa = gpd.read_file(usa_path)
+df = gpd.read_file(PerimConsts.perims_path)
+# usa = gpd.read_file(PerimConsts.usa_path)
 
-# basic filtering
-# remove none geometry 
+# basic filtering - remove none / null geometry 
 non_empty = df[df.geometry != None]
-# remove null acres
 non_null = non_empty[non_empty.GIS_ACRES != 0]
 finalized_perims = non_null
 # NOTE: filtering by 'final' label established by NIFC is UNRELIABLE!
-if apply_Wildfire_Final_Perimeter:
-    print(f'WARNING: {apply_Wildfire_Final_Perimeter} is true; may severely limit search results.')
+if PerimConsts.apply_Wildfire_Final_Perimeter:
+    print(f'WARNING: {PerimConsts.apply_Wildfire_Final_Perimeter} is true; may severely limit search results.')
+    assert 'FEATURE_CA' in non_emptys.columns, ""
     finalized_perims = non_empty[non_empty.FEATURE_CA == 'Wildfire Final Perimeter']
 
-if geojson_use:
+if PerimConsts.geojson_use:
     # check selected key in list
+    data_all = PerimConsts.data_all
     all_names = data_all['Name'].tolist()
-    assert geojson_keyword in all_names, "Selected geojson_keyword not in GeoJson, check constants."
+    assert PerimConsts.geojson_keyword in all_names, "Selected geojson_keyword not in GeoJson, check constants."
     # read geojson
     gdf = data_all[data_all['Name']==geojson_keyword].copy()
-    gdf = gdf.sort_values(by='t',ascending=ascending)
+    gdf = gdf.sort_values(by='t',ascending=PerimConsts.ascending)
 else: 
     # Williams ID based path
-    lf_files = glob.glob(williams_final_path)
+    lf_files = glob.glob(PerimConsts.williams_final_path)
     # unique lf ids if more than one, but works with only one too!
     lf_ids = list(set([file.split('Largefire/')[1].split('_')[0] for file in lf_files])) 
     print('Number of LF ids:',len(lf_ids)) # Should be one, just william's flats
@@ -208,11 +266,11 @@ else:
         most_recent_file = [file for file in lf_files if lf_id in file][-1]
         largefire_dict[lf_id] = most_recent_file
 
-    gdf = gpd.read_file(largefire_dict[lf_id],layer=layer)
+    gdf = gpd.read_file(largefire_dict[lf_id],layer=PerimConsts.layer)
     # sort by descending time (latest to newest)
-    gdf = gdf.sort_values(by='t',ascending=ascending)
+    gdf = gdf.sort_values(by='t',ascending=PerimConsts.ascending)
 
-if use_final:
+if PerimConsts.use_final:
     print('BENCHMARKING: FINAL PERIM V. MODE')
     # read perimeter of existing line
     fid = lf_ids[0]
@@ -241,7 +299,7 @@ else:
         # start edge case
         # @TODO: update handling of edge case for filtering
         # print(f'all picked up timestamps: {finalized_williams.t.tolist()}')
-        # iterate and print years for mismatch
+        # iterate print years for mismatch
         for l in range(finalized_williams.shape[0]):
             year_fetch = finalized_williams.iloc[[l]].t.item().year
             if year_fetch != sample_year:
@@ -252,37 +310,28 @@ else:
     # else: single year
     assert isinstance(sample_year, int), "sample year fails type match"
     extracted_year = sample_year
-
-# print('VERBOSE: DEBUGGING MODE')
-# print('full set of gdf')
-# print(finalized_williams)
-# print('t of full gdf')
-# print(finalized_williams.t.tolist())
-
-        
-# adjust CRS - nifc
-# default_crs
+     
+# adjust nifc CRS
 try:
     print('Attempting set_crs (nifc)...')
-    finalized_perims.set_crs(default_crs)
+    finalized_perims.set_crs(PerimConsts.default_crs)
 except: 
     print('Failure: attempting to_crs application')
-    finalized_perims = finalized_perims.to_crs(default_crs)
+    finalized_perims = finalized_perims.to_crs(PerimConsts.default_crs)
     print(finalized_perims.crs)
 
 # adjust FEDS crs 
 try:
     print('Attempting set_crs (FEDS)...')
-    finalized_williams.set_crs(default_crs)
+    finalized_williams.set_crs(PerimConsts.default_crs)
 except: 
     print('Failure: attempting to_crs application')
-    finalized_williams = finalized_williams.to_crs(default_crs)
+    finalized_williams = finalized_williams.to_crs(PerimConsts.default_crs)
     print(finalized_williams.crs)
 
-# unit/crs check
 assert finalized_williams.crs == finalized_perims.crs, "CRS mismatch"
-assert finalized_williams.crs.axis_info[0].unit_name == unit_preference, f"finalized_williams fails unit check for: {unit_preference}, current units: {finalized_williams.crs.axis_info[0].unit_name}"
-assert finalized_perims.crs.axis_info[0].unit_name == unit_preference, f"finalized_perims fails unit check for: {unit_preference}"
+assert finalized_williams.crs.axis_info[0].unit_name == PerimConsts.unit_preference, f"finalized_williams fails unit check for: {PerimConsts.unit_preference}, current units: {finalized_williams.crs.axis_info[0].unit_name}"
+assert finalized_perims.crs.axis_info[0].unit_name == PerimConsts.unit_preference, f"finalized_perims fails unit check for: {PerimConsts.unit_preference}"
 
 # filter by year if year available
 try:
@@ -296,13 +345,13 @@ except NameError:
     assert 1==0, "force stop -> make algorithm rely on year? otherwise doesnt seem efficient"
 
 # root out none types
-year_perims['DATE_NOT_NONE'] = year_perims.apply(lambda row : row.DATE_CUR is not None, axis = 1)
+year_perims['DATE_NOT_NONE'] = year_perims.apply(lambda row : getattr(row, PerimConsts.date_column) is not None, axis = 1)
 year_perims = year_perims[year_perims.DATE_NOT_NONE == True]
 
 # root out long-len date instances
 # @TODO: origin of these dates? just wrong user control? way to salvage them reliably?
 try:
-    year_perims['DATE_LEN_VALID'] = year_perims.apply(lambda row : len(row.DATE_CUR) == 8 , axis = 1)
+    year_perims['DATE_LEN_VALID'] = year_perims.apply(lambda row : len(getattr(row, PerimConsts.date_column)) == 8 , axis = 1)
     year_perims = year_perims[year_perims.DATE_LEN_VALID == True]
 except TypeError as e: 
     # if none detected, missed by filtering - check non existence
@@ -310,7 +359,7 @@ except TypeError as e:
 
 # transform NIFC str to new datetime object
 cur_format = '%Y%m%d' 
-year_perims['DATE_CUR_STAMP'] =  year_perims.apply(lambda row : datetime.strptime(row.DATE_CUR, cur_format), axis = 1)
+year_perims['DATE_CUR_STAMP'] =  year_perims.apply(lambda row : datetime.strptime(getattr(row, PerimConsts.date_column), cur_format), axis = 1)
 
 # nifc-perim pairs as tuples
 # i.e. (perimeter FEDS instance, NIFC match)
@@ -350,9 +399,9 @@ for instance in tqdm(range(finalized_williams.shape[0])):
     # match run with get nearest
     # although its really picky -> try for now
     
-    print(f'VERBOSE: reduced: {reduced}, timestamp: {timestamp}')
+    # print(f'VERBOSE: reduced: {reduced}, timestamp: {timestamp}')
     try:
-        matches = get_nearest(reduced, timestamp, curr_dayrange)
+        matches = get_nearest(reduced, timestamp, PerimConsts.curr_dayrange)
     except:
         # print('WARNING get_nearest failed: continue in instance comparison')
         # indicates no match in given range -> append to failure list 
@@ -367,38 +416,10 @@ for instance in tqdm(range(finalized_williams.shape[0])):
         
     intersd = [matches.iloc[[ing]] for ing in range(matches.shape[0])]
     
-    # --------
-    
-    """
-    # extract time stamp
-    timestamp = finalized_williams.iloc[[instance]].t
-    
-    # query matching nifc with year-month-day form
-    # year-month-day matches
-    matches = get_nearest(year_perims, timestamp, curr_dayrange)
-    """
-    
     if matches is None:
         # @TODO: improve handling -> likely just continue and report failed benching
         raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
-        
-    # intersect closest day matches - ideally size one
-    """
-    intersd = []
-    # find all matches with intersections 
-    # for a_match in matches:
-    
-    for a_m in range(matches.shape[0]):
-    
-        # set using index
-        a_match = matches.iloc[[a_m]]
-        
-        resulting = gpd.overlay(a_match,finalized_williams.iloc[[instance]], how='intersection')
-        # if non empty -> append
-        if not resulting.empty:
-            # @NOTE: do NOT append the intersection; want original object only
-            intersd.append(a_match)
-    """
+
     
     if len(intersd) == 0:
         # print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
@@ -417,7 +438,10 @@ for instance in tqdm(range(finalized_williams.shape[0])):
         comparison_pairs.append((finalized_williams.iloc[[instance]], intersd[0]))
 
 # @NOTE: consider reworking store situation - iterating over list can be time consuming for feds perims
-error_percent_performance = []
+symmDiffNIFC_performance = []
+# @TODO: define extray arrays for other calculations
+
+
 # @TODO: store corresponding performance per single difference
 makeup_feds = []
 makeup_nifc = [] 
@@ -428,23 +452,19 @@ makeup_nifc = []
 for nifc_perim_pair in comparison_pairs:
     
     # 0: feds instance, 1: nifc matces
-    perim_inst = nifc_perim_pair[0]
+    feds_inst = nifc_perim_pair[0]
     nifc_inst = nifc_perim_pair[1]
     
     # if none type, append 0 accuracy and cont
     if nifc_inst is None:
-        error_percent_performance.append(100)
+        symmDiffNIFC_performance.append(100)
+        # @TODO: cover all other cases
+        
         continue
     
-    sym_diff = perim_inst.symmetric_difference(nifc_inst, align=False)
-    
-    # use item() to fetch int out of values
-    assert sym_diff.shape[0] == 1, "Multiple sym_diff entries identified; pair accuracy evaluation will fail."
-    
-    # calculate error percent: (difference / "correct" shape aka nifc)*100
-    error_percent = (sym_diff.geometry.area.item() / nifc_inst.geometry.area.item())*100
+    symm_ratio = symmDiffRatioCalculation(feds_inst, nifc_inst)
     # align calculations by index -> zip n store at end
-    error_percent_performance.append(error_percent)
+    symmDiffNIFC_performance.append(symm_ratio)
 
 
 
@@ -453,14 +473,14 @@ print('-----------------')
 print('ANALYSIS COMPLETE')
 print('-----------------')
 
-assert len(error_percent_performance) == len(comparison_pairs), "Mismatching dims for error performance v. comparison pairs, check resulting arrays"
+assert len(symmDiffNIFC_performance) == len(comparison_pairs), "Mismatching dims for error performance v. comparison pairs, check resulting arrays"
 
 print('Resulting error percentages for FEDS perimeter accuracy vs. closest intersecting NIFC:')
 count_100 = 0
 count_100_dates = []
-for index in range(len(error_percent_performance)):
+for index in range(len(symmDiffNIFC_performance)):
     # fetch inst + components by index
-    sam = error_percent_performance[index]
+    sam = symmDiffNIFC_performance[index]
     match_tuple = comparison_pairs[index]
     perim_output = match_tuple[0]
     nifc_perim = match_tuple[1]
@@ -470,8 +490,8 @@ for index in range(len(error_percent_performance)):
         count_100 += 1
         count_100_dates.append(perim_output.t.item())
     else:
-        print(f'For FEDS output perimeter at {perim_output.t.item()} and NIFC perimeter at {nifc_perim.DATE_CUR_STAMP.item()}, percent error of:')
-        print(f'{sam}%')
+        print(f'For FEDS output perimeter at {perim_output.t.item()} and NIFC perimeter at {nifc_perim.DATE_CUR_STAMP.item()}, symmDiff ratio percent error of:')
+        print(f'{sam*100}%')
 print(f'{count_100} instances of 100% error')
 print('FEDS output perimeter dates with no matches by threshold:')
 print(count_100_dates)
