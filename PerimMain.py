@@ -36,8 +36,6 @@ import PerimConsts
 # FUNCTION DEFINITIONS
 import PerimFuncs
 
-# MAIN CODE 
-
 pd.set_option('display.max_columns',None)
 
 # read nifc perims
@@ -229,7 +227,6 @@ for instance in tqdm(range(finalized_williams.shape[0])):
     if matches is None:
         # @TODO: improve handling -> likely just continue and report failed benching
         raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
-
     
     if len(intersd) == 0:
         # print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
