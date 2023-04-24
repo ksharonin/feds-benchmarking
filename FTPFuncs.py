@@ -18,24 +18,161 @@ print('WARNING: BE SURE TO CHECK ALL CONSTANTS')
 # searchForKeyword (boolean for crawler to continue)
 
 # CONSTANTS
-
-# consts, parse from func call
-keyword =  # fire name
-gacc_keyword =  # gacc key word
-year_keyword = # year as str
-depth = # search depth 
+gacc_zones = ["alaska", "calif_n", "calif_s", "california_statewide", "eastern", "great_basin", "n_rockies", "pacific_nw", "rocky_mtn", "southern", "southwest"]
+starting_URL = 'https://ftp.wildfire.gov/public/incident_specific_data/'
 
 # FUNCTION DEFINITIONS
+# processing type: handle input arguments, monitor crawler
+# crawler type: actual crawling
+# intersect type: read off URL and do intersection test
 
-# @TODO: define pure year/gacc basic crawler
-def gaccYearCrawler(gacc_keyword, year_keyword='0', depth=8):
-    """ crawler for year/gacc based search only
+# @TODO: complete implementation after gaccyear crawling
+def intersectFinder(urls, feds):
+    """ function to identify true url matches
+        see if read object geometrically "matches" w/ intersect
+        assume feds is single shape (not full evolution)
+        return: list of urls w/ results
     """
-    # select gacc keyword based region folders
-    
-    # recurse to certain depth to return year matches
     
     return None
+
+# @TODO: define pure year/gacc basic crawler
+def gaccYearProcessing(gacc_keyword, year_keyword='0', depth=8):
+    """ processor for year/gacc based search only
+        for now, do not permit non-gacc term based searches
+        
+        return: list 
+    """
+    assert isinstance(gacc_keyword, str) and isinstance(year_keyword, str)
+    assert 'unsure' not in gacc_keyword, "Unsure indicated; invalid search"
+    assert gacc_keyword in gacc_zones, "This keyword is not in the list of gacc regions. Check intersection results."
+
+    # select gacc keyword based region folders-  (name + '/' char)
+    starting_URL = starting_URL + gacc_keyword + '/'
+    print('The starting point for the search will be at: ', starting_URL)
+    
+    # recurse to certain depth to return year matches
+    print(f'Selected year: {year_keyword}')
+    if year_keyword == '0' or len(year_keyword) < 4:
+        assert 1 == 0, 'Failed to initiate search; default/invalid year passed.'
+    
+    # depth mod / check
+    assert depth >= 5, "Passed depth is too low (must be >= 5, adjust call"
+    if depth != 8:
+        print('WARNING: DEPTH MODIFIED; this may impact your search time. Recommended default is 8.')
+    
+    # call crawler and return candidates
+    found_array = gaccYearCrawler(starting_URL, depth, [])
+    
+    return found_array
+
+def gaccYearCrawler(pageURL, depth, results):
+    """ crawler for year/gacc based search only
+        for now, do not permit non-gacc term based searches
+        
+        return: results list (keeps growing till end)
+    """
+    # url access attempts
+    try:
+        getPage = requests.get(pageURL)
+        getPage.raise_for_status()
+    except requests.exceptions.HTTPError as err: 
+        print('Accessed a Forbidden URL/URL with error status, return false')
+        return []
+    except requests.exceptions.Timeout:
+        print('Timeout occured, check FTP site status manually')
+        return []
+    except requests.exceptions.TooManyRedirects:
+        print('Too many re-directs, check FTP site status manually')
+        return []
+    except requests.exceptions.RequestException as e:
+        print('Catostrophic error, bail execution due to RequestException')
+        return []
+    
+    # base case (hit all items/non dirs)
+    
+    # base case (hit depth limit)
+    
+    # Parse text for opportunities block
+    soup = bs4.BeautifulSoup(getPage.text, 'html.parser')
+    
+    # check the current text for any emptiness 
+    a_categories = soup.find_all('a')
+    # pop out using loop to exclude irrelevant categories 
+    a_categories_modified = a_categories.copy()
+    
+    if not a_categories:
+        print('Empty page detected, return false')
+        return []
+    
+    # loop through the a_categories to get rid of irreleveant matches like parent dir
+    # Also eliminate the Name, Last modified, size from the list to reduce search confusion
+    
+    for link in a_categories:
+        
+        # eliminate from the link search to prevent recursive returns:
+        # parent directory, name, last modified, size, description
+        
+        # Note: the filter assumes uniformity per every page for its a-class titles
+        # want to eliminate the possibility of lower case misses -> make whole thing lower
+        if 'Parent Directory' in str(link):
+            # remove this link from the a_categories_modified
+            a_categories_modified.remove(link)
+        elif 'Name' in str(link) or  'Size' in str(link) or 'Last modified' in str(link) or 'Description' in str(link):
+            # remove related categories that do not contribute to search, aka redundant categories
+            a_categories_modified.remove(link)
+    
+    # switch when found
+    available = False
+    
+    # search the modified list of valid links, including files
+    for link in a_categories_modified:
+        # fetch the a class name of the link
+        current_string_check = link.get('href')
+        if keyWord in str(current_string_check).lower():
+            # if given a year, must check if in URL too
+            if selected_a_year:
+                if year_keyword in pageURL:
+                    available = True
+                    break
+            else:
+                available = True
+                break
+        # try: if there is %20 -> check one side and the other for appearance
+        # check is "_" can appear instead of spaces
+        elif ("%20" in keyWord):
+            # ISSUE: may be more than one %20 -> iterate through list 
+            split = keyWord.split("%20")
+            # excluding the %20, try both sides
+            # ex: Minto_Lakes != Minto%20Lakes
+            # if %20 isn't in, it may bug bc it wants whole thing
+            
+            # [true, true] -> counter should = 2
+            counter_found = 0;
+            
+            # iterate through splits to see if all are in
+            for substring in split:
+                if substring in str(current_string_check).lower():
+                    counter_found += 1
+                
+            # if the counter matches arr size -> must be true for all substrings
+            # therefore the keyword is found
+            if len(split) == counter_found:
+                if selected_a_year:
+                    if year_keyword in pageURL:
+                        # print('TESTING: year in '+ str(pageURL))
+                        available = True
+                        break
+                else:
+                    available = True
+                    break
+            
+    # return if available
+    assert isinstance(available, bool), "available var is not boolean, check procedure"
+    
+    # do we want keyword based results? - maybe before diving into incident, check inters?
+    
+    return results
 
 # @TODO: FIX PASSED ARRS
 # @TODO: FIX KEYWORD RELIANCE - but still enable search if wanted...

@@ -6,6 +6,7 @@ running controls
 import glob
 import pandas as pd
 import geopandas as gpd
+from pyproj import CRS
 
 # ------------------------------------------------------------------------------
 # project directories
@@ -26,9 +27,11 @@ geojson_keyword = 'WILLIAMS FLATS' # 'KINCADE'
 # ------------------------------------------------------------------------------
 # CRS controls
 # ------------------------------------------------------------------------------
-default_crs = 'epsg:4326' # select CRS to apply e.g.'epsg:9311'
-unit_dict = {'epsg:9311': 'metre', 'epsg:4326':'degree'}
-unit_preference = unit_dict[default_crs] # unit of choice @TODO double check plot impact
+default_crs = 4326 # select CRS to apply e.g.'epsg:9311' -> 9311 as int
+crs_object = CRS.from_user_input(default_crs)
+fetch_unit = crs_object.axis_info[0].unit_name
+# unit_dict = {'epsg:9311': 'metre', 'epsg:4326':'degree'}
+unit_preference = fetch_unit # unit of choice @TODO double check plot impact
 
 # ------------------------------------------------------------------------------
 # main run controls
