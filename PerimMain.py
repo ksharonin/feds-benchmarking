@@ -247,11 +247,6 @@ for instance in tqdm(range(finalized_williams.shape[0])):
 # @NOTE: consider reworking store situation - iterating over list can be time consuming for feds perims
 symmDiffNIFC_performance = []
 # @TODO: define extray arrays for other calculations
-
-
-# @TODO: store corresponding performance per single difference
-makeup_feds = []
-makeup_nifc = [] 
   
 
 # @TODO ACCURACY CALCULATION: per pair run comparison
@@ -266,13 +261,21 @@ for nifc_perim_pair in comparison_pairs:
     if nifc_inst is None:
         symmDiffNIFC_performance.append(100)
         # @TODO: cover all other cases
-        
         continue
     
     symm_ratio = PerimFuncs.symmDiffRatioCalculation(feds_inst, nifc_inst)
+    ratio = PerimFuncs.ratioCalculation(feds_inst, nifc_inst)
+    precision = PerimFuncs.precisionCalculation(feds_inst, nifc_inst)
+    
+    # SIMPLIFY TEST - symmDiff
+    if PerimConsts.apply_simplify: 
+        print('VERBOSE: entering recursive simplify proc')
+        best_tol = PerimFuncs.best_simplification(feds_inst, nifc_inst, 1000000, 0, PerimConsts.simplify_tolerance, PerimFuncs.symmDiffRatioCalculation, True)
+        print('TEST: best_tol from best_simplificatio()')
+        print(best_tol)
+    
     # align calculations by index -> zip n store at end
     symmDiffNIFC_performance.append(symm_ratio)
-
 
 
 # @NOTE: end for now just to see outputs

@@ -27,7 +27,7 @@ geojson_keyword = 'WILLIAMS FLATS' # 'KINCADE'
 # ------------------------------------------------------------------------------
 # CRS controls
 # ------------------------------------------------------------------------------
-default_crs = 4326 # select CRS to apply e.g.'epsg:9311' -> 9311 as int
+default_crs = 9311 # 4326 # select CRS to apply e.g.'epsg:9311' -> 9311 as int
 crs_object = CRS.from_user_input(default_crs)
 fetch_unit = crs_object.axis_info[0].unit_name
 # unit_dict = {'epsg:9311': 'metre', 'epsg:4326':'degree'}
@@ -43,3 +43,7 @@ date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. da
 curr_dayrange = 5 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
 apply_Wildfire_Final_Perimeter = False # apply the NIFC label based filtering - WARNING: unreliable given inconsistency
 simplify_tolerance = 100 # user selected tolerance upper bound
+apply_simplify = True # flip simplify performance
+# for now place artificial barrier to prevent extreme draw of resources
+# if apply_simplify:
+    # assert use_final, "Artificial stop; apply_simplify and multiple perims enabled; check PerimConsts.py"

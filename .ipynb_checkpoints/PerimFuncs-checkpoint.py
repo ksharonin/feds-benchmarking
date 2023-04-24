@@ -94,13 +94,14 @@ def simplify_geometry(shape, tolerance):
     return shape.geometry.simplify(tolerance)
 
 # @TODO: finish implementing recursive function on simplification calc
-def best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance, calc_method):
+def best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance, calc_method, lowerPref):
     """ feds: feds source
         nifc: external source to compare to
         top_performance: best numeric value (default is worst value aka > 100 % error)
         top_tolerance: corresponding simplification with best performance
         base_tolerance: counter for tracking progress from limit -> 0
         calc_method
+        lowerPref: true if a "better" score is considered a lower value
         
         return: top_tolerance (best tolerance value from recursion)
     
@@ -108,20 +109,22 @@ def best_simplification(feds, nifc, top_performance, top_tolerance, base_toleran
     if base_tolerance == 0:
         return top_tolerance
     
-    # calculate performance
+    # simplify + calculate performance
     simplified_feds = simplify_geometry(feds, base_tolerance)
-    
-    # @TODO: make sure regardless of calc, order is proper
     curr_performance = calc_method(simplified_feds, nifc)
-    # if performance better -> persist
-    if curr_performance < top_performance:
+     
+    # if performance "better" (depends on passed bool / method) -> persist
+    if curr_performance < top_performance and lowerPref:
         top_performance = curr_performance
         top_tolerance = base_tolerance
+    elif curr_performance > top_performance and not lowerPref:
+        top_performance = curr_performance
+        top_tolerance = base_toleranc
     
     # reduce and keep recursing down
     base_tolerance -= 1
     
-    return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance)
+    return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance, calc_method, lowerPref)
 
 # @TODO: implement error calculation according to yang's figs
 
@@ -144,7 +147,7 @@ def ratioCalculation(feds_inst, nifc_inst):
     
     return feds_area / nifc_area
 
-def accuracyCalculation():
+def accuracyCalculation(feds_inst, nifc_inst):
     """ Calculate accuracy defined in table 6:
         (TP+TN)/AREA_TOTAL
         
@@ -162,7 +165,8 @@ def precisionCalculation(feds_inst, nifc_inst):
     """
     assert isinstance(feds_inst, pd.DataFrame) and isinstance(nifc_inst, pd.DataFrame), "Object types will fail intersection calculation; check inputs"
     # calculate intersect (agreement) -> divide
-    TP = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    TP = overlay.geometry.area.item()
     feds_area = feds_inst.geometry.area.item()
     
     return TP / feds_area
