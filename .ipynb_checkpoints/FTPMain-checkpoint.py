@@ -26,10 +26,12 @@ from matplotlib import pyplot as plt
 from osgeo import ogr
 
 # global constants
+import PerimConsts
+
 geojson_use = True
 geojson_keyword = 'BOULDER' # 'WILLIAMS FLATS' 
 feds_final_path = '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*' #feds path
-ascending = True
+ascending = False
 
 # read FEDS perims (geojson or regular)
 pd.set_option('display.max_columns',None)
@@ -65,18 +67,8 @@ else:
 # @TODO: expand later to fix crs mismatches
 assert gacc_boundaries.crs == gdf.crs, "mismatch crs"
     
-# reduce to GACC region - intersect w/ boundaries
-gacc_path = '/projects/my-public-bucket/gaccRegions'
-gacc_boundaries = gpd.read_file(gacc_path)
-gacc_keys = ['OSCC', 'SWCC', 'GBCC', 'RMCC', 'AICC', 'NWCC', 'NRCC', 'ONCC', 'EACC', 'SACC']
-assert gacc_boundaries.GACCAbbrev.tolist() == gacc_keys, "Gacc keys order unexpected; check input file (see if sort is random)"
-# @NOTE: exclude "california_statewide" label (no fires (?) in that dir)
-ftp_names = ["alaska", "calif_n", "calif_s", "eastern", "great_basin", "n_rockies", "pacific_nw", "rocky_mtn", "southern", "southwest"]
-ftp_names_reordered = ["calif_s", "southwest", "great_basin", "rocky_mtn", "alaska", "pacific_nw", "n_rockies", "calif_n", "eastern", "southern"] 
-assert ftp_names.sort() == ftp_names_reordered.sort(), "Extra check if any spell errors occured"
-
-# map gaccIDs from geo <-> ftp search words
-gacc_name_dict = dict(gacc_boundaries, ftp_names_reordered)
+# IMPORT map gaccIDs from geo <-> ftp search words
+gacc_name_dict = PerimConsts.gacc_name_dict
 
 # intersect fire to find GACC region
 final_gacc_region = None 

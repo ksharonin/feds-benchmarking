@@ -47,3 +47,23 @@ apply_simplify = True # flip simplify performance
 # for now place artificial barrier to prevent extreme draw of resources
 # if apply_simplify:
     # assert use_final, "Artificial stop; apply_simplify and multiple perims enabled; check PerimConsts.py"
+    
+# ------------------------------------------------------------------------------
+# FTP crawler consts
+# ------------------------------------------------------------------------------
+# gacc region path + file
+gacc_path = '/projects/my-public-bucket/gaccRegions'
+gacc_boundaries = gpd.read_file(gacc_path)
+# region keys
+gacc_keys = ['OSCC', 'SWCC', 'GBCC', 'RMCC', 'AICC', 'NWCC', 'NRCC', 'ONCC', 'EACC', 'SACC']
+assert gacc_boundaries.GACCAbbrev.tolist() == gacc_keys, "Gacc keys order unexpected; check input file (see if sort is random)"
+# associated regions with FTP server
+# @NOTE: exclude "california_statewide" label (no fires (?) in that dir)
+ftp_names = ["alaska", "calif_n", "calif_s", "eastern", "great_basin", "n_rockies", "pacific_nw", "rocky_mtn", "southern", "southwest"]
+ftp_names_reordered = ["calif_s", "southwest", "great_basin", "rocky_mtn", "alaska", "pacific_nw", "n_rockies", "calif_n", "eastern", "southern"] 
+assert ftp_names.sort() == ftp_names_reordered.sort(), "Extra check if any spell errors occured"
+# finalized gacc <-> ftp server dict
+assert len(gacc_keys) == len(ftp_names_reordered)
+gacc_name_dict = dict(zip(gacc_keys, ftp_names_reordered))
+# start site for all FTP searches
+starting_URL = 'https://ftp.wildfire.gov/public/incident_specific_data/'

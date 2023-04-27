@@ -1,6 +1,8 @@
-# ftpCrawler function
-
-# MAIN ISSUE: ASSUMES NAME --> only do regional crawling
+""" FTPFuncs
+This is the module containing all functions used in this project for FTP crawl searches
+Processors: functions preppingn args
+Crawlers: given processed args, search and return urls
+"""
 
 # import libraries to parse and read through the websites 
 import bs4, requests
@@ -14,12 +16,11 @@ print('WARNING: BE SURE TO CHECK ALL CONSTANTS')
 
 # workflow:
 # callerCrawler (filters given arguments -> calls subsequent actual crawlers) ->
-# crawler (actual recurse function) vs. gaccYearCrawler (recurse with no keyword functionality) ->
-# searchForKeyword (boolean for crawler to continue)
+# crawler (actual recurse function) vs. gaccYearCrawler (recurse with no keyword functionality) -> searchForKeyword (boolean for crawler to continue)
 
-# CONSTANTS
-gacc_zones = ["alaska", "calif_n", "calif_s", "california_statewide", "eastern", "great_basin", "n_rockies", "pacific_nw", "rocky_mtn", "southern", "southwest"]
-starting_URL = 'https://ftp.wildfire.gov/public/incident_specific_data/'
+# IMPORT CONSTANTS
+gacc_zones = PerimConsts.gacc_zones
+starting_URL = starting
 
 # FUNCTION DEFINITIONS
 # processing type: handle input arguments, monitor crawler

@@ -25,6 +25,9 @@ from matplotlib import pyplot as plt
 from osgeo import ogr
 
 # @TODO: FINISH CHECK -add s3 path/validity check w boto3
+# @TODO: implement error calculation according to yang's figs
+# @TODO: implement TN calculation by bounding box method - trueNeg() method
+
 def path_exists(path, ptype):
     """ Check if path exists (regular OS or s3)
             path == url to check
@@ -126,8 +129,6 @@ def best_simplification(feds, nifc, top_performance, top_tolerance, base_toleran
     
     return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance, calc_method, lowerPref)
 
-# @TODO: implement error calculation according to yang's figs
-
 # terms:
 # FEDS data are considered as the predicted class. 
 # TN: True Negative; FN: False Negative; FP: False Positive; 
@@ -135,12 +136,36 @@ def best_simplification(feds, nifc, top_performance, top_tolerance, base_toleran
 # FEDS_B: Area burned from FEDS; FRAP_UB: Unburned area from FRAP; 
 # FRAP_B: Burned area from FRAP; AREA_TOTAL: Total land area in California.
 
+def areaCalculation(geom_instance):
+    """ Calculate area of the object, including
+        mult-row instances via loop
+        Input: geom data frame instance
+        Output: numeric area calculation (units defined in const)
+    """
+    try:
+        area = 0
+        for i in range(geom_instance.geometry.area.shape[0]):
+            area += geom_instance.geometry.area[i]
+    except KeyError:
+        # print('Identified key error in areaCalculation(): returning item() based area calc', end='\r')
+        area = geom_instance.geometry.area.item()
+    
+    return area
+
+def trueNeg(feds_inst, nifc_inst):
+    """ Calculate true negative (agreeing on no geom)
+        input: two geo dataframes
+        output: area where both agree of no geom
+    """
+    return None
+
 def ratioCalculation(feds_inst, nifc_inst):
     """ Calculate ratio defined in table 6:	
         FEDS_B/REF_B(urned area)
     """
-    feds_area = feds_inst.geometry.area.item()
-    nifc_area = nifc_inst.geometry.area.item()
+    # sum area (since mul entries may exist) up by calc
+    feds_area = areaCalculation(feds_inst)
+    nifc_area = areaCalculation(nifc_inst)
     
     assert feds_area is not None, "None type detected for area; something went wrong"
     assert nifc_area is not None, "None type detected for area; something went wrong"
@@ -151,9 +176,14 @@ def accuracyCalculation(feds_inst, nifc_inst):
     """ Calculate accuracy defined in table 6:
         (TP+TN)/AREA_TOTAL
         
-        TN == ???
+        TN == agreed inverse by bounding box
         TP == FRAP + FEDS agree on burned (intersect)
     """
+    # generate bounding box fitting both instances (even if multi-poly)
+    
+    # subtract feds_inst and nifc_inst from bounding area
+    
+    # TN = calculate intersection of both "negatives"
     
     return 0
 
@@ -166,8 +196,8 @@ def precisionCalculation(feds_inst, nifc_inst):
     assert isinstance(feds_inst, pd.DataFrame) and isinstance(nifc_inst, pd.DataFrame), "Object types will fail intersection calculation; check inputs"
     # calculate intersect (agreement) -> divide
     overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
-    TP = overlay.geometry.area.item()
-    feds_area = feds_inst.geometry.area.item()
+    TP = areaCalculation(overlay) # overlay.geometry.area.item()
+    feds_area = areaCalculation(feds_inst)
     
     return TP / feds_area
 
@@ -177,7 +207,7 @@ def recallCalculation(feds_inst, nifc_inst):
         REF_B == all burned of nifc/source
     """
     TP = gpd.overlay(feds_inst, nifc_inst, how='intersection')
-    nifc_area = nifc_inst.geometry.area.item()
+    nifc_area = areaCalculation(nifc_inst)
     
     return TP / nifc_area
 
@@ -209,6 +239,9 @@ def symmDiffRatioCalculation(feds_inst, nifc_inst):
     # use item() to fetch int out of values
     assert sym_diff.shape[0] == 1, "Multiple sym_diff entries identified; pair accuracy evaluation will fail."
     # calculate error percent: (difference / "correct" shape aka nifc)
-    symmDiff_ratio = sym_diff.geometry.area.item() / nifc_inst.geometry.area.item()
+    symm_area = areaCalculation(sym_diff)
+    nifc_area = areaCalculation(nifc_inst)
+    # symmDiff_ratio = sym_diff.geometry.area.item() / nifc_inst.geometry.area.item()
+    symmDiff_ratio = symm_area / nifc_area
     
     return symmDiff_ratio
