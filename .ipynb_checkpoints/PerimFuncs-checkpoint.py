@@ -27,6 +27,7 @@ from osgeo import ogr
 # @TODO: FINISH CHECK -add s3 path/validity check w boto3
 # @TODO: implement error calculation according to yang's figs
 # @TODO: implement TN calculation by bounding box method - trueNeg() method
+# @NOTE: revisit keep_geom_type=False -> keep it?
 
 def path_exists(path, ptype):
     """ Check if path exists (regular OS or s3)
@@ -152,16 +153,98 @@ def areaCalculation(geom_instance):
     
     return area
 
+def truePos(feds_inst, nifc_inst):
+    """ Calculate true pos area:
+        where both NIFC and FEDS burned
+        return basic intersection
+    """
+    overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    result = areaCalculation(overlay) # overlay.geometry.area.item()
+    return result
+
+def falseNeg(feds_inst, nifc_inst):
+    """ Calculate false negative area:
+        NIFC burned but FEDS DID NOT burn (unburned needs envelope)
+        make bounding -> get negative of Feds -> intersect with nifc (burning)
+    """
+    # union to envelope 
+    unionr = gpd.overlay(feds_inst, nifc_inst, how='union')
+    
+    # generate bounding box fitting both instances (even if multi-poly)
+    net_bounding = unionr.geometry.envelope
+    # net_barea = areaCalculation(net_bounding)
+    # convert to data frame
+    net_bounding = net_bounding.to_frame()
+    
+    feds_neg = gpd.overlay(net_bounding, feds_inst, how='difference')
+    result = gpd.overlay(feds_neg, nifc_inst, keep_geom_type=False, how='intersection')
+    result = areaCalculation(result)
+    
+    return result
+
+def falsePos(feds_inst, nifc_inst):
+    """ Calculate false negative area:
+        NIFC DID NOT burn (unburned needs envelope) but FEDS burned 
+        bounding -> get negative of nifc -> intersect with feds (burning)
+    """
+    # union to envelope 
+    unionr = gpd.overlay(feds_inst, nifc_inst, how='union')
+    
+    # generate bounding box fitting both instances (even if multi-poly)
+    net_bounding = unionr.geometry.envelope
+    # net_barea = areaCalculation(net_bounding)
+    # convert to data frame
+    net_bounding = net_bounding.to_frame()
+    
+    nifc_neg = gpd.overlay(net_bounding, nifc_inst, how='difference')
+    
+    result = gpd.overlay(nifc_neg, feds_inst, keep_geom_type=False, how='intersection')
+    result = areaCalculation(result)
+    
+    return result
+
 def trueNeg(feds_inst, nifc_inst):
-    """ Calculate true negative (agreeing on no geom)
+    """ Calculate true negative area (agreeing on none geom)
         input: two geo dataframes
         output: area where both agree of no geom
     """
-    return None
+    
+    # union to envelope 
+    unionr = gpd.overlay(feds_inst, nifc_inst, how='union')
+    
+    # generate bounding box fitting both instances (even if multi-poly)
+    net_bounding = unionr.geometry.envelope
+    net_barea = areaCalculation(net_bounding)
+    # convert to data frame
+    net_bounding = net_bounding.to_frame()
+    
+    # subtract feds_inst and nifc_inst from bounding area
+    feds_neg = gpd.overlay(net_bounding, feds_inst, how='difference')
+    nifc_neg = gpd.overlay(net_bounding, nifc_inst, how='difference')
+    
+    # TN = calculate intersection of both "negatives"
+    inter_neg = gpd.overlay(feds_neg, nifc_neg, keep_geom_type=False, how='intersection')
+    result = areaCalculation(inter_neg)
+    
+    return result
+
+def areaTotal(feds_inst, nifc_inst):
+    """ Calculate total Area defined in table 6:	
+        FEDS_B/REF_B(burned area)
+    """
+    # union to envelope 
+    unionr = gpd.overlay(feds_inst, nifc_inst, how='union')
+    # generate bounding box fitting both instances (even if multi-poly)
+    net_bounding = unionr.geometry.envelope
+    net_barea = areaCalculation(net_bounding)
+    # convert to data frame
+    # net_bounding = net_bounding.to_frame()
+    
+    return net_barea
 
 def ratioCalculation(feds_inst, nifc_inst):
     """ Calculate ratio defined in table 6:	
-        FEDS_B/REF_B(urned area)
+        FEDS_B/REF_B(burned area)
     """
     # sum area (since mul entries may exist) up by calc
     feds_area = areaCalculation(feds_inst)
@@ -179,13 +262,11 @@ def accuracyCalculation(feds_inst, nifc_inst):
         TN == agreed inverse by bounding box
         TP == FRAP + FEDS agree on burned (intersect)
     """
-    # generate bounding box fitting both instances (even if multi-poly)
+    TN = trueNeg(feds_inst, nifc_inst)
+    TP = truePos(feds_inst, nifc_inst)
+    AREA_TOTAL = areaTotal(feds_inst, nifc_inst)
     
-    # subtract feds_inst and nifc_inst from bounding area
-    
-    # TN = calculate intersection of both "negatives"
-    
-    return 0
+    return (TN + TP) / AREA_TOTAL
 
 # @TODO: call percision calculation func
 def precisionCalculation(feds_inst, nifc_inst):
@@ -195,8 +276,8 @@ def precisionCalculation(feds_inst, nifc_inst):
     """
     assert isinstance(feds_inst, pd.DataFrame) and isinstance(nifc_inst, pd.DataFrame), "Object types will fail intersection calculation; check inputs"
     # calculate intersect (agreement) -> divide
-    overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
-    TP = areaCalculation(overlay) # overlay.geometry.area.item()
+    # overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    TP = truePos(feds_inst, nifc_inst)
     feds_area = areaCalculation(feds_inst)
     
     return TP / feds_area
@@ -206,7 +287,8 @@ def recallCalculation(feds_inst, nifc_inst):
         TP == FRAP + FEDS agree on burned (intersect)
         REF_B == all burned of nifc/source
     """
-    TP = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    # overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    TP = truePos(feds_inst, nifc_inst)
     nifc_area = areaCalculation(nifc_inst)
     
     return TP / nifc_area
@@ -215,9 +297,11 @@ def IOUCalculation(feds_inst, nifc_inst):
     """ IOU (inter over union)
         TP/(TP + FP + FN)
     """
-    TP = gpd.overlay(feds_inst, nifc_inst, how='intersection')
-    FP = 0 # feds + nifc agree on no burning
-    FN = 0 # feds thinks unburned when nifc burned
+    
+    # overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
+    TP = truePos(feds_inst, nifc_inst)
+    FP = falsePos(feds_inst, nifc_inst) # feds + nifc agree on no burning
+    FN = falseNeg(feds_inst, nifc_inst) # feds thinks unburned when nifc burned
     
     return 0
 

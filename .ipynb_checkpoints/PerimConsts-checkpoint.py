@@ -19,9 +19,9 @@ usa_path = "/projects/my-public-bucket/USAShapeFile"
 # geojson run control / path
 # ------------------------------------------------------------------------------
 # if want to use extent set
+geojson_use = False
 files = glob.glob("/projects/shared-buckets/ashiklom/WesternUS/files_for_paper/*_.geojson")
 data_all = pd.concat([gpd.read_file(file) for file in files],ignore_index=True)
-geojson_use = False
 geojson_keyword = 'WILLIAMS FLATS' # 'KINCADE'
 
 # ------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ use_final = False # use last perimeter if True, use evolving perimeters if False
 layer = 'perimeter'
 ascending = False # plot in descending + analysis in last to first
 date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) - change according to source 
-curr_dayrange = 5 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
+curr_dayrange = 3 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
 apply_Wildfire_Final_Perimeter = False # apply the NIFC label based filtering - WARNING: unreliable given inconsistency
 simplify_tolerance = 100 # user selected tolerance upper bound
 apply_simplify = True # flip simplify performance

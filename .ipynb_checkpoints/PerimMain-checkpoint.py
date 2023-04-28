@@ -263,9 +263,16 @@ for nifc_perim_pair in comparison_pairs:
         # @TODO: cover all other cases
         continue
     
-    symm_ratio = PerimFuncs.symmDiffRatioCalculation(feds_inst, nifc_inst)
+    # yang calculations
     ratio = PerimFuncs.ratioCalculation(feds_inst, nifc_inst)
+    accuracy = PerimFuncs.accuracyCalculation(feds_inst, nifc_inst)
     precision = PerimFuncs.precisionCalculation(feds_inst, nifc_inst)
+    recall = PerimFuncs.recallCalculation(feds_inst, nifc_inst)
+    iou= PerimFuncs.IOUCalculation(feds_inst, nifc_inst)
+    f1 = PerimFuncs.f1ScoreCalculation(feds_inst, nifc_inst)
+    
+    
+    symm_ratio = PerimFuncs.symmDiffRatioCalculation(feds_inst, nifc_inst)
     
     # SIMPLIFY TEST - symmDiff
     if PerimConsts.apply_simplify: 

@@ -46,8 +46,11 @@ def gaccYearProcessing(gacc_keyword, year_keyword='0', depth=8):
     """
     assert isinstance(gacc_keyword, str) and isinstance(year_keyword, str)
     assert 'unsure' not in gacc_keyword, "Unsure indicated; invalid search"
-    assert gacc_keyword in gacc_zones, "This keyword is not in the list of gacc regions. Check intersection results."
-
+    assert gacc_keyword in ftp_names_reordered, "This keyword is not in the list of gacc regions. Check intersection results."
+    
+    # reimport due to persist
+    from PerimConsts import starting_URL
+    
     # select gacc keyword based region folders-  (name + '/' char)
     starting_URL = starting_URL + gacc_keyword + '/'
     print('The starting point for the search will be at: ', starting_URL)
