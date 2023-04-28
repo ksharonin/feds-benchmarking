@@ -245,12 +245,19 @@ for instance in tqdm(range(finalized_williams.shape[0])):
         comparison_pairs.append((finalized_williams.iloc[[instance]], intersd[0]))
 
 # @NOTE: consider reworking store situation - iterating over list can be time consuming for feds perims
+
+# yang calc storage
+ratios = []
+accuracies = []
+precisions = []
+recalls = []
+ious = []
+f1s = []
+# indepdent calc storage
 symmDiffNIFC_performance = []
-# @TODO: define extray arrays for other calculations
   
 
-# @TODO ACCURACY CALCULATION: per pair run comparison
-# calculate symmetrical difference
+# calculate yang methods + additional indep methods
 for nifc_perim_pair in comparison_pairs:
     
     # 0: feds instance, 1: nifc matces
@@ -259,7 +266,13 @@ for nifc_perim_pair in comparison_pairs:
     
     # if none type, append 0 accuracy and cont
     if nifc_inst is None:
-        symmDiffNIFC_performance.append(100)
+        ratios.append(None)
+        accuracies.append(None)
+        precisions.append(None)
+        recalls.append(None)
+        ious.append(None)
+        f1s.append(None)
+        symmDiffNIFC_performance.append(None)
         # @TODO: cover all other cases
         continue
     
@@ -270,8 +283,7 @@ for nifc_perim_pair in comparison_pairs:
     recall = PerimFuncs.recallCalculation(feds_inst, nifc_inst)
     iou= PerimFuncs.IOUCalculation(feds_inst, nifc_inst)
     f1 = PerimFuncs.f1ScoreCalculation(feds_inst, nifc_inst)
-    
-    
+    # indep calc 
     symm_ratio = PerimFuncs.symmDiffRatioCalculation(feds_inst, nifc_inst)
     
     # SIMPLIFY TEST - symmDiff
@@ -283,6 +295,12 @@ for nifc_perim_pair in comparison_pairs:
     
     # align calculations by index -> zip n store at end
     symmDiffNIFC_performance.append(symm_ratio)
+    ratios.append(ratio)
+    accuracies.append(accuracy)
+    precisions.append(precision)
+    recalls.append(recall)
+    ious.append(iou)
+    f1s.append(f1)
 
 
 # @NOTE: end for now just to see outputs
@@ -290,6 +308,11 @@ print('-----------------')
 print('ANALYSIS COMPLETE')
 print('-----------------')
 
+# check sizing for all calculations
+iteratei = [ratios, accuracies, precisions, recalls, ious, f1s]
+for listy in iteratei:
+    assert len(listy) == len(comparison_pairs), "Mismatching dims for error performance v. comparison pairs, check resulting arrays"
+    
 assert len(symmDiffNIFC_performance) == len(comparison_pairs), "Mismatching dims for error performance v. comparison pairs, check resulting arrays"
 
 print('Resulting error percentages for FEDS perimeter accuracy vs. closest intersecting NIFC:')
@@ -302,14 +325,23 @@ for index in range(len(symmDiffNIFC_performance)):
     perim_output = match_tuple[0]
     nifc_perim = match_tuple[1]
     
-    if sam == 100:
+    # all items sharing index should correspond to a none result
+    if sam is None:
         # count and append date
         count_100 += 1
         count_100_dates.append(perim_output.t.item())
     else:
-        print(f'For FEDS output perimeter at {perim_output.t.item()} and NIFC perimeter at {nifc_perim.DATE_CUR_STAMP.item()}, symmDiff ratio percent error of:')
-        print(f'{sam*100}%')
-print(f'{count_100} instances of 100% error')
+        print(f'For FEDS output perimeter at {perim_output.t.item()} and NIFC perimeter at {nifc_perim.DATE_CUR_STAMP.item()}:')
+        print(f'Ratio: {ratios[index]}')
+        print(f'Accuracy: {accuracies[index]}')
+        print(f'Precision: {precisions[index]}')
+        print(f'Recall: {recalls[index]}')
+        print(f'IOU: {ious[index]}')
+        print(f'F1 Score: {f1s[index]}')
+        print(f'symmDiff ratio percent error of: {sam*100}%')
+        print(f'NOTE: all calculations in unit: {PerimConsts.unit_preference}')
+
+print(f'{count_100} instances of 100% error / no calculations')
 print('FEDS output perimeter dates with no matches by threshold:')
 print(count_100_dates)
 

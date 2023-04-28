@@ -12,6 +12,8 @@ from pyproj import CRS
 # project directories
 # ------------------------------------------------------------------------------
 perims_path = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
+# old DEFUNCT: '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*'
+# new try: '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS_REDO/2019/Largefire/*11625*'
 williams_final_path = '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*'
 usa_path = "/projects/my-public-bucket/USAShapeFile"
 
@@ -40,10 +42,10 @@ use_final = False # use last perimeter if True, use evolving perimeters if False
 layer = 'perimeter'
 ascending = False # plot in descending + analysis in last to first
 date_column = 'DATE_CUR' # column corresponding to source date of perim (i.e. date for comparison against output) - change according to source 
-curr_dayrange = 3 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
+curr_dayrange = 1 # day range search; values [0,7] available, 1 recommended for 0 hour <-> 12 hour adjustments
 apply_Wildfire_Final_Perimeter = False # apply the NIFC label based filtering - WARNING: unreliable given inconsistency
 simplify_tolerance = 100 # user selected tolerance upper bound
-apply_simplify = True # flip simplify performance
+apply_simplify = False # flip simplify performance
 # for now place artificial barrier to prevent extreme draw of resources
 # if apply_simplify:
     # assert use_final, "Artificial stop; apply_simplify and multiple perims enabled; check PerimConsts.py"
