@@ -12,8 +12,9 @@ from pyproj import CRS
 # project directories
 # ------------------------------------------------------------------------------
 perims_path = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
-# old DEFUNCT: '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*'
+# old DEFUNCT: '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*10510*'
 # new try: '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS_REDO/2019/Largefire/*11625*'
+# empty failing: '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS_REDO/2019/Largefire/*11515*'
 williams_final_path = '/projects/shared-buckets/gsfc_landslides/FEDSoutput-s3-conus/WesternUS/2019/Largefire/*4655*'
 usa_path = "/projects/my-public-bucket/USAShapeFile"
 

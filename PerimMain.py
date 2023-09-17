@@ -25,7 +25,6 @@ from osgeo import ogr
 # dev notes/todos:
 # @TODO: rename "finalized_williams" var to elim confusion for generalized v.
 # @TODO: call path validity checks/finish path check
-# @TODO: create/add in CRS mapping dictionary
 # @TODO: test run simplify + use PerimConsts.simplify_tolerance for control
 # @TODO: jupyternb generation for visualization?
 # @TODO: change the get_nearest to apply for month...? currently very strict
