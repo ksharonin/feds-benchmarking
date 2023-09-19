@@ -30,21 +30,23 @@ class InputVEDA():
     
     def __init__(self, title: str, 
                  collection: str, 
-                 access_type="api": str,
                  usr_start: str,
                  usr_stop: str,
                  usr_bbox: list,
-                 
+                 access_type="api": str,
+                 limit=1000: int,
+                 custom_filter=False: str,
                  ):
         
         # USER INPUT / FILTERS
-        # TODO: FOR CERTAIN SEARCHES NEED DEFAULT TO SATISFY
         self._title = title
         self._collection = collection
         self._access_type = access_type
         self._usr_start = usr_start
         self._usr_stop = usr_stop
         self._usr_bbox = usr_bbox
+        self._srch_limit = limit
+        self._custom_filter = custom_filter
         
         # PROGRAM SET
         self._api_url = None
@@ -54,12 +56,14 @@ class InputVEDA():
         self._range_start = None
         self._range_stop = None
         self._polygons = None
+        self._queryables = None
         
         # set up
         if access_type == "api":
             assert title in InputVEDA.TITLE_SETS, "ERR INPUTVEDA: Invalid title provided"
-            self.set_api_url()
-            self.fetch_api_collection()
+            self.__set_api_url()
+            self.__fetch_api_collection()
+            self.__set_api_polygons()
         else:
             logging.warning('API NOT SELECTED: discretion advised due to direct file access.')
             self.set_hard_dataset()
@@ -88,21 +92,23 @@ class InputVEDA():
     def polygons(self):
         return self._polygons
     
+    @property
+    def queryables(self):
+        return self._queryables
+    
     
     # API DATA ACCESS
-    @classmethod
-    def set_api_url(self):
+    def __set_api_url(self):
         """ fetch api url based on valid title"""
         if self._title in InputVEDA.OGC_URLS:
             self._api_url = OGC_URLS[title]
             
-    
-    @classmethod
     @ds_bbox.setter
     @crs.setter
     @range_start.setter
     @range_stop.setter
-    def fetch_api_collection(self) -> dict:
+    @queryables.setter
+    def __fetch_api_collection(self) -> dict:
         """ return collection using url + set up instance attributes"""
         
         assert self._api_url is not None, "ERR INPUTVEDA: cannot fetch with a null API url"
@@ -116,34 +122,57 @@ class InputVEDA():
         self._crs = perm["extent"]["spatial"]["crs"]
         self._range_start = perm["extent"]["temporal"]["interval"][0][0]
         self._range_stop = perm["extent"]["temporal"]["interval"][0][1]
+        self._queryables = get_collections.collection_queryables(self._collection)["properties"]
         
         return perm
     
-    @classmethod
     @polygons.setter
-    def set_polygons(self):
+    def __set_api_polygons(self):
         """ fetch polygons from collection of interest; called with filter params from user
             fetch all filters from instance attributes
         """
         
         if self._title == "firenrt":
-            perm_results = w.collection_items(
-                self._collection,  # name of the dataset we want
-                bbox=["-106.8", "24.5", "-72.9", "37.3"],  # coodrinates of bounding box,
-                datetime=[last_week + "/" + most_recent_time],  # date range
-                limit=1000,  # max number of items returned
-                filter="farea>5 AND duration>2",  # additional filters based on queryable fields
-            )
+            
+            # usr filter applied - assumes valid filter is passed
+            if self._custom_filter:
+                perm_results = Features(url=self._api_url).feature_collections().collection_items(
+                    self._collection,  # name of the dataset we want
+                    bbox= self._usr_bbox,  # coords of bounding box,
+                    datetime=[self._usr_start + "/" + self._usr_stop],  # user date range
+                    limit=self._srch_limit,  # max number of items returned
+                    filter= ext_query,  # additional filters based on queryable fields
+                )
+            
+            # no usr filter
+            else:
+                perm_results = Features(url=self._api_url).feature_collections().collection_items(
+                    self._collection,  # name of the dataset we want
+                    bbox= self._usr_bbox,  # coords of bounding box,
+                    datetime=[self._usr_start + "/" + self._usr_stop],  # user date range
+                    limit=self._srch_limit,  # max number of items returned
+                )
+                
         else:
+            logging.error(f"ERR INPUTVEDA: no setting method for the _title: {self._title}")
             # TODO
-            logging.error(f"ERR INPUTVEDA: no setting method for this _title: {self._title}")
         
+        if not perm_results["numberMatched"] == perm_results["numberReturned"]:
+            logging.warning('INPUTVEDA: provided limit cuts out items of possible interest; consider upping limit') 
+            
         self._polygons = perm_results
+        
+    
+    def load_api_polygons(self) -> gpd.geodataframe.GeoDataFrame:
+         """ assuming __set_api_polygons successfully ran; load api polygons
+             return associated geoDataFrame; can apply plotting, analysis to frame etc.
+        """
+        return gpd.GeoDataFrame.from_features(self._polygons["features"])
+    
     
     
     # HARDCODED DATA ACCESS
     # TODO
-    @classmethod
     @crs.setter
     @units.setter
     def set_hard_dataset(self):

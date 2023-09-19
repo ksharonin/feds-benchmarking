@@ -1,13 +1,25 @@
 """ main.py
 """
+
+import glob
+import logging
+import pandas as pd
+import geopandas as gpd
+from pyproj import CRS
+from owslib.ogcapi.features import Features
+import geopandas as gpd
+import datetime as dt
+from datetime import datetime, timedelta
+
 # while 1 
 
 # USER INPUT
 # for VEDA:
--> time range(start/stop)
--> bbox
--> name
--> collection of the title
+# -> time range(start/stop)
+# -> bbox
+# -> name
+# -> collection of the title
+# -> any extra filter matching queryable fields
 
 # GENERATE
 # VEDA input instance
