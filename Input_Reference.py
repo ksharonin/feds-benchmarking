@@ -21,24 +21,20 @@ class InputReference():
     
     """
     
-    # global variables here
+    REFERENCE_PREDEFINED_SETS = ["nifc_local", "nifc_arcgis", "calfire_arcgis", "custom_shp", "custom_s3"]
+    ACCESS_TYPE = ["defined", "custom"]
+    NIFC_LOCAL = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
+    NIFC_ARCGIS = ""
+    USA_SHP = "/projects/my-public-bucket/USAShapeFile"
     
     # instance initiation
     def __init__(self, title: str, 
                  usr_start: str,
                  usr_stop: str,
                  usr_bbox: list,
-                 access_type="local": str,
-                 custom_filter=False: str,
+                 access_type="defined",
+                 custom_filter=False,
                 ):
-        
-        # predefined sets (where methods exist)
-        REFERENCE_PREDEFINED_SETS = ["nifc_local", "nifc_arcgis", "calfire_arcgis"]
-        ACCESS_TYPE = ["local", "arcgis_online", "ftp_server", "aws_s3", "custom_api", "other"]
-        # url maps
-        NIFC_LOCAL = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
-        NIFC_ARCGIS = ""
-        USA_SHP = "/projects/my-public-bucket/USAShapeFile"
         
         # USER INPUT / FILTERS
         self._title = title
@@ -81,22 +77,29 @@ class InputReference():
     def polygons(self):
         return self._polygons
     
-    
-    # NIFC
-    def read_nifc_local(self):
-        """ read local nifc file for polygons """
+    # GENERIC ACCESS 
+    def read_shp_from_local(self):
+        """ given a generic path in maap with access -> read polygon """
         # TODO
         return 0
     
-    def read_nifc_arcgis(self):
-        """ access arcgis services for nifc polygons """
+    def read_arcgis_online(self):
+        """ given a generic arcgis access -> accesspolygon """
         # TODO
         return 0
     
+    # NIFC DATA PROCESSING
+    def nifc_local_filters(self):
+        return 0
     
-    # CALFIRE
+    def nifc_arcgis_filters(self):
+        return 0
     
     
-    # OTHER - GENERIC
+    # CALFIRE DATA PROCESSING
+    def calfire_local_filters(self):
+        return 0
     
+    def calfire_arcgis_filters(self):
+        return 0
     

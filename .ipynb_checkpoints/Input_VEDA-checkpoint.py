@@ -33,9 +33,9 @@ class InputVEDA():
                  usr_start: str,
                  usr_stop: str,
                  usr_bbox: list,
-                 access_type="api": str,
-                 limit=1000: int,
-                 custom_filter=False: str,
+                 access_type="api",
+                 limit=1000,
+                 custom_filter=False,
                  ):
         
         # USER INPUT / FILTERS
@@ -101,7 +101,9 @@ class InputVEDA():
     def __set_api_url(self):
         """ fetch api url based on valid title"""
         if self._title in InputVEDA.OGC_URLS:
-            self._api_url = OGC_URLS[title]
+            self._api_url = InputVEDA.OGC_URLS[self._title]
+            
+        return self
             
     @ds_bbox.setter
     @crs.setter
@@ -124,7 +126,8 @@ class InputVEDA():
         self._range_stop = perm["extent"]["temporal"]["interval"][0][1]
         self._queryables = get_collections.collection_queryables(self._collection)["properties"]
         
-        return perm
+        # return perm
+        return self
     
     @polygons.setter
     def __set_api_polygons(self):
@@ -162,11 +165,14 @@ class InputVEDA():
             
         self._polygons = perm_results
         
+        return self
+        
     
     def load_api_polygons(self) -> gpd.geodataframe.GeoDataFrame:
-         """ assuming __set_api_polygons successfully ran; load api polygons
+        """ assuming __set_api_polygons successfully ran; load api polygons
              return associated geoDataFrame; can apply plotting, analysis to frame etc.
         """
+        
         return gpd.GeoDataFrame.from_features(self._polygons["features"])
     
     
