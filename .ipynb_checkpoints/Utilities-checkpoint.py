@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 
 
 # USER INPUT PROCESSING
-def format_datetime(year, month, day, hour, minute, second, tz_offset_hours, tz_offset_minutes) -> str:
+def format_datetime(year, month, day, hour, minute, second, tz_offset_hours, tz_offset_minutes, utc_offset) -> str:
     """ given integer vals, produce iso string formatted for VEDA processing """
     
     dt = datetime(year, month, day, hour, minute, second)
@@ -27,8 +27,9 @@ def format_datetime(year, month, day, hour, minute, second, tz_offset_hours, tz_
     else:
         dt += tz_offset
     
-    # ISO 8601 string
+    # ISO 8601 string + fix time zone addition for API search
     formatted_datetime = dt.isoformat()
+    formatted_datetime = formatted_datetime + '+' + utc_offset
     
     return formatted_datetime
 

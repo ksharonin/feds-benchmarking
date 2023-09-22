@@ -58,15 +58,9 @@ class InputVEDA():
         self._polygons = None
         self._queryables = None
         
-        # set up
-        if access_type == "api":
-            assert title in InputVEDA.TITLE_SETS, "ERR INPUTVEDA: Invalid title provided"
-            self.__set_api_url()
-            self.__fetch_api_collection()
-            self.__set_api_polygons()
-        else:
-            logging.warning('API NOT SELECTED: discretion advised due to direct file access.')
-            self.set_hard_dataset()
+        # singleset up functions
+        self.__set_up_master()
+        
     
     @property
     def units(self):
@@ -97,26 +91,39 @@ class InputVEDA():
         return self._queryables
     
     
+    # MASTER SET UP FUNCTION
+    def __set_up_master(self):
+        """ set up instance properties """
+        if self._access_type == "api":
+            assert self._title in InputVEDA.TITLE_SETS, "ERR INPUTVEDA: Invalid title provided"
+            self.__set_api_url()
+            self.__fetch_api_collection()
+            self.__set_api_polygons()
+        else:
+            logging.warning('API NOT SELECTED: discretion advised due to direct file access.')
+            self.set_hard_dataset()
+    
     # API DATA ACCESS
     def __set_api_url(self):
         """ fetch api url based on valid title"""
+        
         if self._title in InputVEDA.OGC_URLS:
             self._api_url = InputVEDA.OGC_URLS[self._title]
-            
+        
         return self
             
-    @ds_bbox.setter
-    @crs.setter
-    @range_start.setter
-    @range_stop.setter
-    @queryables.setter
+    # @ds_bbox.setter
+    # @crs.setter
+    # @range_start.setter
+    # @range_stop.setter
+    # @queryables.setter
     def __fetch_api_collection(self) -> dict:
         """ return collection using url + set up instance attributes"""
         
         assert self._api_url is not None, "ERR INPUTVEDA: cannot fetch with a null API url"
         
         # read out
-        get_collections = Features(url=self._api_url).feature_collections()
+        get_collections = Features(url=self._api_url)
         perm = get_collections.collection(self._collection)
         
         # set extent info with properties 
@@ -129,7 +136,7 @@ class InputVEDA():
         # return perm
         return self
     
-    @polygons.setter
+    # @polygons.setter
     def __set_api_polygons(self):
         """ fetch polygons from collection of interest; called with filter params from user
             fetch all filters from instance attributes
@@ -139,7 +146,7 @@ class InputVEDA():
             
             # usr filter applied - assumes valid filter is passed
             if self._custom_filter:
-                perm_results = Features(url=self._api_url).feature_collections().collection_items(
+                perm_results = Features(url=self._api_url).collection_items(
                     self._collection,  # name of the dataset we want
                     bbox= self._usr_bbox,  # coords of bounding box,
                     datetime=[self._usr_start + "/" + self._usr_stop],  # user date range
@@ -149,16 +156,16 @@ class InputVEDA():
             
             # no usr filter
             else:
-                perm_results = Features(url=self._api_url).feature_collections().collection_items(
+                
+                perm_results = Features(url=self._api_url).collection_items(
                     self._collection,  # name of the dataset we want
                     bbox= self._usr_bbox,  # coords of bounding box,
-                    datetime=[self._usr_start + "/" + self._usr_stop],  # user date range
-                    limit=self._srch_limit,  # max number of items returned
+                    datetime=  [self._usr_start + "/" + self._usr_stop],
+                    limit=self._srch_limit  # max number of items returned
                 )
                 
         else:
-            logging.error(f"ERR INPUTVEDA: no setting method for the _title: {self._title}")
-            # TODO
+            logging.error(f"TODO: ERR INPUTVEDA: no setting method for the _title: {self._title}")
         
         if not perm_results["numberMatched"] == perm_results["numberReturned"]:
             logging.warning('INPUTVEDA: provided limit cuts out items of possible interest; consider upping limit') 
@@ -179,8 +186,8 @@ class InputVEDA():
     
     # HARDCODED DATA ACCESS
     # TODO
-    @crs.setter
-    @units.setter
+    # @crs.setter
+    # @units.setter
     def set_hard_dataset(self):
         """ read data from passed url/location"""
         

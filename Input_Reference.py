@@ -23,6 +23,7 @@ class InputReference():
     
     REFERENCE_PREDEFINED_SETS = ["nifc_local", "nifc_arcgis", "calfire_arcgis", "custom_shp", "custom_s3"]
     ACCESS_TYPE = ["defined", "custom"]
+    
     NIFC_LOCAL = "/projects/my-public-bucket/InterAgencyFirePerimeterHistory"
     NIFC_ARCGIS = ""
     USA_SHP = "/projects/my-public-bucket/USAShapeFile"
