@@ -35,6 +35,82 @@ class OutputCalculation():
         # TODO
         return 0
     
+    #### WARNING: EXPERIMENTAL METHODS BELOW, NOT CONFORMING TO OOP DESIGN ###   
+    
+    # EXPERIMENTAL MATCHING
+    
+    def find_closest_time_pairs(self):
+        # nifc-perim pairs as tuples
+        # i.e. (perimeter FEDS instance, NIFC match)
+        comparison_pairs = []
+
+        # per FEDS output perim -> get best NIFC match(es) by date
+        print('Per FEDS output, identify best NIFC match...')
+        for instance in tqdm(range(finalized_williams.shape[0])):
+
+            # collection of indices relative to year_perims
+            insc_indices = []
+            # master matches with intersections/timestemp filtering
+            intersd = []
+
+            # iterate on all year_perims and inersect
+            for insc in range(year_perims.shape[0]):
+                # fetch nifc instance
+                curr_nifc = year_perims.iloc[[insc]]
+                intersect = gpd.overlay(curr_nifc,finalized_williams.iloc[[instance]], how='intersection')
+                # cont if empty
+                if not intersect.empty:
+                    insc_indices.append(insc)
+                # else: continue
+
+            if len(insc_indices) == 0:
+                print('WARNING: insc_indices was none -> skipping step')
+                continue
+
+            # all current indices present get_nearest check opportunities
+            timestamp = finalized_williams.iloc[[instance]].t
+            # apply insc_indices to pick out intersect matches
+            reduced = year_perims.take(insc_indices)
+            # match run with get nearest
+            # although its really picky -> try for now
+
+            # print(f'VERBOSE: reduced: {reduced}, timestamp: {timestamp}')
+            try:
+                matches = PerimFuncs.get_nearest(reduced, timestamp, PerimConsts.curr_dayrange)
+            except:
+                # print('WARNING get_nearest failed: continue in instance comparison')
+                # indicates no match in given range -> append to failure list 
+                print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
+                comparison_pairs.append((finalized_williams.iloc[[instance]], None))
+                continue
+
+            # all matches should act as intersd -> extract from DF
+            if matches is None:
+                # @TODO: improve handling -> likely just continue and report failed benching
+                raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
+
+            intersd = [matches.iloc[[ing]] for ing in range(matches.shape[0])]
+
+            if matches is None:
+                # @TODO: improve handling -> likely just continue and report failed benching
+                raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
+
+            if len(intersd) == 0:
+                # print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
+                # comparison_pairs.append((finalized_williams.iloc[[instance]], None))
+                assert 1==0, "case shouldn't exist, throw exception"
+
+            elif len(intersd) > 1:
+                # if multiple have overlay -> store them with a warning 
+                print(f'NOTICE: More thane 1, in total: {len(matches)} NIFC date matches, intersect with perimeter master row ID: {finalized_williams.iloc[[instance]].index} with index in finalized_willaims: {instance}, storing all as pairs')
+
+                # iterate and generate tuple pairs; append to list
+                [comparison_pairs.append((finalized_williams.iloc[[instance]], to_ap)) for to_ap in intersd]
+
+            else:
+                # single match -> append (perim instance, NIFC single match)
+                comparison_pairs.append((finalized_williams.iloc[[instance]], intersd[0]))
+        
     
     # EXPERIMENTAL CALCULATION METHODS
     def simplify_geometry(shape, tolerance):

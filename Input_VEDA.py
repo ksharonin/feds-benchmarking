@@ -4,6 +4,7 @@ Input_VEDA Class
 """
 
 import glob
+import sys
 import logging
 import pandas as pd
 import geopandas as gpd
@@ -103,7 +104,7 @@ class InputVEDA():
             logging.warning('API NOT SELECTED: discretion advised due to direct file access.')
             self.set_hard_dataset()
     
-    # API DATA ACCESS
+    # API DATA ACCESS HELPERS
     def __set_api_url(self):
         """ fetch api url based on valid title"""
         
@@ -166,6 +167,7 @@ class InputVEDA():
                 
         else:
             logging.error(f"TODO: ERR INPUTVEDA: no setting method for the _title: {self._title}")
+            sys.exit()
         
         if not perm_results["numberMatched"] == perm_results["numberReturned"]:
             logging.warning('INPUTVEDA: provided limit cuts out items of possible interest; consider upping limit') 
