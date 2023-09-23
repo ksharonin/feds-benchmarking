@@ -34,6 +34,7 @@ class InputVEDA():
                  usr_start: str,
                  usr_stop: str,
                  usr_bbox: list,
+                 crs=4326,
                  access_type="api",
                  limit=1000,
                  custom_filter=False,
@@ -48,11 +49,11 @@ class InputVEDA():
         self._usr_bbox = usr_bbox
         self._srch_limit = limit
         self._custom_filter = custom_filter
+        self._crs = CRS.from_user_input(crs)
         
         # PROGRAM SET
         self._api_url = None
         self._ds_bbox = None
-        self._crs = None
         self._units = None
         self._range_start = None
         self._range_stop = None

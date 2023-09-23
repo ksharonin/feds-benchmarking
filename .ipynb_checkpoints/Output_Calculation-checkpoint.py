@@ -38,6 +38,10 @@ class OutputCalculation():
     #### WARNING: EXPERIMENTAL METHODS BELOW, NOT CONFORMING TO OOP DESIGN ###   
     
     # EXPERIMENTAL MATCHING
+    def check_crs_match(self) -> bool:
+        """ check both crs' are matching"""
+        # TODO
+        return True
     
     def find_closest_time_pairs(self):
         # nifc-perim pairs as tuples

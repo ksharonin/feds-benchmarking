@@ -51,9 +51,14 @@ def check_bbox(bbox: list) -> bool:
 
     return False
 
+def check_crs(crs_in: int) -> bool:
+    """ given crs epsg as int, return crs object"""
+    try:
+        crs_object = CRS.from_user_input(crs_in)
+        return True
+    except Exception as gen_err:
+        return False
 
 
-
-# dec reference
-# The ‘@atexit.register’ decorator is used to call the function when the program is exiting. 
-# A function with the same name but different behavior with respect to the type of argument is a generic function.  The ‘@singledispatch’ decorator 
+# DECORATORS
+# TODO

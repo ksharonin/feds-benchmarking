@@ -54,6 +54,7 @@ class InputReference():
                  usr_start: str,
                  usr_stop: str,
                  usr_bbox: list,
+                 crs=4326,
                  control_type="defined",
                  custom_url="none",
                  custom_read_type="none",
@@ -69,10 +70,10 @@ class InputReference():
         self._custom_url = custom_url
         self._custom_read_type = custom_read_type
         self._custom_filter = custom_filter
+        self._crs = CRS.from_user_input(crs)
         
         # PROGRAM SET
         self._ds_bbox = None
-        self._crs = None
         self._units = None
         self._ds_start = None
         self._ds_stop = None
@@ -137,7 +138,7 @@ class InputReference():
             
     # SET UP HELPERS
     def __dispatch_set_polygons(self):
-        """ dispatch function for """
+        """ dispatch function for all polygon settings"""
         
         if self._ds_read_type in InputReference.READ_TYPE.keys():
             custom_set_func = InputReference.READ_TYPE[self._ds_read_type]
@@ -152,44 +153,25 @@ class InputReference():
             if not custom/agency defined, then preset filters will be applied
             users are welcome to modify/remove filters at their own discretion
         """
-        # read in set
-        df = gpd.read_file(self._ds_url)
+        try:
+            df = gpd.read_file(self._ds_url)
+        except Exception as generic_err:
+            logger.error(f"ERR: unable to read local shp from url: {self._ds_url}, produced generic error: {generic_err}")
+            sys.exit()
         
-        # TODO: REWORK THE BELOW EXPERIMENTAL SEQUENCE! This is specific to nifc interagency
-        non_empty = df[df.geometry != None]
-        non_null = non_empty[non_empty.GIS_ACRES != 0]
-        finalized_perims = non_null
-        finalized_perims.set_crs(PerimConsts.default_crs)
-        assert finalized_williams.crs == finalized_perims.crs, "CRS mismatch"
-        assert finalized_williams.crs.axis_info[0].unit_name == PerimConsts.unit_preference, f"finalized_williams fails unit check for: {PerimConsts.unit_preference}, current units: {finalized_williams.crs.axis_info[0].unit_name}"
-        assert finalized_perims.crs.axis_info[0].unit_name == PerimConsts.unit_preference, f"finalized_perims fails unit check for: {PerimConsts.unit_preference}"
-        extracted_year = max_timestamp.year # some kind of extraction
-        try:
-            extracted_year
-            year_perims = finalized_perims[finalized_perims.FIRE_YEAR == str(extracted_year)]
-        except NameError:
-            print('WARNING: No year extracted from FEDS output. Setting to None. No year reduction applied.')
-            extracted_year = None 
-            year_perims = finalized_perims
-            assert 1==0, "force stop -> make algorithm rely on year? otherwise doesnt seem efficient"
-        # root out none types
-        year_perims['DATE_NOT_NONE'] = year_perims.apply(lambda row : getattr(row, PerimConsts.date_column) is not None, axis = 1)
-        year_perims = year_perims[year_perims.DATE_NOT_NONE == True]
-        # root out long-len date instances
-        # @TODO: origin of these dates? just wrong user control? way to salvage them reliably?
-        try:
-            year_perims['DATE_LEN_VALID'] = year_perims.apply(lambda row : len(getattr(row, PerimConsts.date_column)) == 8 , axis = 1)
-            year_perims = year_perims[year_perims.DATE_LEN_VALID == True]
-        except TypeError as e: 
-            # if none detected, missed by filtering - check non existence
-            print('Invalid type passed for lenght validation; check for Nones in set')
-            
-        # transform NIFC str to new datetime object
-        cur_format = '%Y%m%d' 
-        year_perims['DATE_CUR_STAMP'] =  year_perims.apply(lambda row : datetime.strptime(getattr(row, PerimConsts.date_column), cur_format), axis = 1)
+        # filter based on predfined conds 
+        if self._title == "nifc_interagency_history_local":
+            df = self.filter_nifc_interagency_history_local(df)
+        elif self._title == "":
+            print("TODO: finish set polygon local")
+            sys.exit()
+        elif self._title == "":
+            print("TODO: finish set polygon local")
+            sys.exit()
+        else:
+            assert self._title == "none", "Fatal: reached custom shp local reading despite a non-'none' title"
 
-        # next: pass off to comparison_pairs array
-        
+        self._polygons = df
         
         return self
     
@@ -203,21 +185,45 @@ class InputReference():
     def __set_polygon_s3(self):
         return self
     
+    # PREDEFINED DS FILTER FUNCTIONS 
+    # NIFC 
+    def filter_nifc_interagency_history_local(self, df):
+        """ filter a passed polygon set under known nifc experimental properties & adds new cols
+            actions:
+            - remove None geometries
+            - remove entries w/ 0 acres
+            - set crs to passed crs
+            - set exact year
+            - flag and remove any none dates
+            - flag and remove improper length date cols
+            - generate datetime object from date
+        """
+        
+        # fetch dates
+        df_date = datetime.fromisoformat(self._usr_start)
+        df_year = df_date.year
+        nifc_date_format = '%Y%m%d' 
+        
+        # actions as docstring specifies
+        df = df[df.geometry != None]
+        df = df[df.GIS_ACRES != 0]
+        df.set_crs(self._crs)
+        df = df[df.FIRE_YEAR == str(df_year)]
+        df['DATE_NOT_NONE'] = df.apply(lambda row : getattr(row, 'DATE_CUR') is not None, axis = 1)
+        df = df[df.DATE_NOT_NONE == True]
+        df['DATE_LEN_VALID'] = df.apply(lambda row : len(getattr(row, 'DATE_CUR')) == 8 , axis = 1)
+        df = df[df.DATE_LEN_VALID == True]
+        df['DATE_CUR_STAMP'] =  df.apply(lambda row : datetime.strptime(getattr(row, 'DATE_CUR'), nifc_date_format), axis = 1)
+        
+        return df
     
-    # NIFC PREDEFINED DATA PROCESSING
-    def nifc_local_filters(self):
-        return 0
+    # TODO
+    def filter_nifc_arcgis_current_incidents(self, df):
+        return df
     
-    def nifc_arcgis_filters(self):
-        return 0
+    def filter_calfire_arcgis_historic(self, df):
+        return df
     
-    
-    # CALFIRE DATA PROCESSING
-    def calfire_local_filters(self):
-        return 0
-    
-    def calfire_arcgis_filters(self):
-        return 0
     
     # based on custom usr input; enable ability to directly pass code?
     def custom_filters_usr(self):
