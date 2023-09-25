@@ -15,6 +15,8 @@ import datetime as dt
 from datetime import datetime, timedelta
 from functools import singledispatch
 
+pd.set_option('display.max_columns',None)
+
 class InputVEDA():
     """ InputVEDA
         Object representing VEDA 
@@ -50,11 +52,11 @@ class InputVEDA():
         self._srch_limit = limit
         self._custom_filter = custom_filter
         self._crs = CRS.from_user_input(crs)
+        self._units = self._crs.axis_info[0].unit_name
         
         # PROGRAM SET
         self._api_url = None
         self._ds_bbox = None
-        self._units = None
         self._range_start = None
         self._range_stop = None
         self._polygons = None

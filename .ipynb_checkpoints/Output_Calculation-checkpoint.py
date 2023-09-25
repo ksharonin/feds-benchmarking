@@ -7,33 +7,120 @@ import glob
 import logging
 import pandas as pd
 import geopandas as gpd
-from pyproj import CRS
-from owslib.ogcapi.features import Features
+import fsspec
+import boto3
 import geopandas as gpd
 import datetime as dt
+
+from pyproj import CRS
+from owslib.ogcapi.features import Features
 from datetime import datetime, timedelta
+from botocore.exceptions import NoCredentialsError, PartialCredentialsError, EndpointConnectionError
+
+# class imports
+from Input_Reference import InputReference
+from Input_VEDA import InputVEDA
 
 class OutputCalculation():
     
     """ OutputCalculation
-        Class representing 
+        Class representing output calculation of veda_input vs ref_input
     """
     
-    def __init__(self, veda_input, ref_input):
+    # implemented output formats
+    OUTPUT_FORMATS = ["txt", "json"]
+    
+    def __init__(self, 
+                 veda_input: InputVEDA, 
+                 ref_input: InputReference, 
+                 output_format: str, 
+                 output_maap_url: str,
+                 print_on: bool,
+                 plot_on: bool):
+
+        # USER INPUT / FILTERS
+        self._veda_input = veda_input
+        self._ref_input = ref_input
+        self._output_format = output_format
+        self._output_maap_url = output_maap_url
+        self._print_on = print_on
+        self._plot_on = plot_on
         
-        # reference originial polygons
-        self.veda_input = veda_input
-        self.ref_input = ref_input
+        # PROGRAM SET
+        self._polygons = None
+        self._dump = None # content to dump into file
         
-    # PERSISTENCE  
-    def dump_to_file(self):
+        # SINGLE SETUP
+        self.__set_up_master()
+        
+    @property
+    def veda_input(self):
+        return self._veda_input
+    
+    @property
+    def ref_input(self):
+        return self._ref_input
+    
+    @property
+    def polygons(self):
+        return self._polygons
+    
+    # MASTER SET UP FUNCTION
+    def __set_up_master(self):
+        """ set up outputcalc instance with checks and generations; run main calculations"""
+        
+        assert self._output_format in OUTPUT_FORMATS, f"Provided output format {self._output_format} is NOT VALID, select only from implemented formats: {OUTPUT_FORMATS}"
+        assert self.__set_up_valid_maap_url, f"Invalid URL: see assertions and/or possibly missing s3://maap-ops-workspace/shared/ in url. Provided url: {self._output_maap_url}"
+        
+        # generate file type based on format
+        
+        # veda and ref matching 
+        
+        # run calculations
+        
+        # write to outputs and call plots
+        
+        return self
+    
+    def __set_up_valid_maap_url(self):
+        """ given a maap-ops-workspace url, check if valid with naming + s3 access"""
+        
+        maap_ops_contained ="s3://maap-ops-workspace/shared/" in self._output_maap_url
+        
+        try:
+            # fetch s3 bucket and check if exists (not concerned w key since we will be making item)
+            s3_url_parts = s3_url.split('/')
+            if len(s3_url_parts) < 4 or s3_url_parts[0] != 's3:' or s3_url_parts[1] != '' or s3_url_parts[2] != '':
+                return False
+
+            bucket_name = s3_url_parts[3]
+            s3 = boto3.client('s3')
+            s3.head_bucket(Bucket=bucket_name)
+            # s3.head_object(Bucket=bucket_name, Key=key)
+
+            return True and maap_ops_contained
+        
+        except NoCredentialsError:
+            print("AWS credentials not found. Please configure your AWS credentials.")
+        except PartialCredentialsError:
+            print("Incomplete AWS credentials found.")
+        except EndpointConnectionError:
+            print("Could not connect to the AWS endpoint. Please check your AWS configuration.")
+        except Exception as e:
+            print(f"Error: {str(e)}")
+
+        return False
+    
+    
+    def format_for_file(self):
         # TODO
         return 0
     
-    # ACCESS
-    def plot_results(self):
+    def write_to_output_file(self):
         # TODO
-        return 0
+        with fsspec.open(self._output_maap_url) as f:
+            f.write(self._dump)
+
     
     #### WARNING: EXPERIMENTAL METHODS BELOW, NOT CONFORMING TO OOP DESIGN ###   
     

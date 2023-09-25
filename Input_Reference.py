@@ -15,6 +15,8 @@ import datetime as dt
 from datetime import datetime, timedelta
 from functools import singledispatch
 
+pd.set_option('display.max_columns',None)
+
 class InputReference():
     """ InputReference
         Object representing an input polygon that is compared to a VEDA object
@@ -31,14 +33,6 @@ class InputReference():
                                  "none"]
     # CONTROL - custom will need to provide their own read types
     CONTROL_TYPE = ["defined", "custom"]
-    # READ TYPE - function map; if agency not specific, then must be custom set
-    READ_TYPE = {  
-                    "shp_local": __set_polygon_shp_local,
-                    "raster_local": __set_polygon_set_raster_local,
-                    "arc_gis_online": __set_polygon_arcgis_online,
-                    "s3": __set_polygon_s3,
-                    "other": None
-                }
     
     # PREDEFINED AGENCY URLS - map mul dict entries?
     URL_MAPS = { 
@@ -50,10 +44,11 @@ class InputReference():
             }
     
     # instance initiation
-    def __init__(self, title="none", 
+    def __init__(self, 
                  usr_start: str,
                  usr_stop: str,
                  usr_bbox: list,
+                 title="none", 
                  crs=4326,
                  control_type="defined",
                  custom_url="none",
@@ -71,6 +66,7 @@ class InputReference():
         self._custom_read_type = custom_read_type
         self._custom_filter = custom_filter
         self._crs = CRS.from_user_input(crs)
+        self._units = self._crs.axis_info[0].unit_name
         
         # PROGRAM SET
         self._ds_bbox = None
@@ -81,7 +77,7 @@ class InputReference():
         self._ds_url = None
         self._ds_read_type = None
         
-        # single setup
+        # SINGLE SETUP
         self.__set_up_master()
             
             
@@ -118,9 +114,9 @@ class InputReference():
         # if agency defined then use predefined dict, otherwise use user inputs
         if self._title != "none" and self._control_type == "defined":
             # set url and read type 
-            assert self._tile in InputReference.URL_MAPS.keys(), f"Provided title {self._title} is not mapped to a known source URL."
-            self._ds_url = URL_MAPS[self._title][0]
-            self._ds_read_type = URL_MAPS[self._title][1]
+            assert self._title in InputReference.URL_MAPS.keys(), f"Provided title {self._title} is not mapped to a known source URL."
+            self._ds_url = InputReference.URL_MAPS[self._title][0]
+            self._ds_read_type = InputReference.URL_MAPS[self._title][1]
             
         else:
             # set url and read type
@@ -185,6 +181,15 @@ class InputReference():
     def __set_polygon_s3(self):
         return self
     
+    # READ TYPE - function map; if agency not specific, then must be custom set
+    READ_TYPE = {  
+                    "shp_local": __set_polygon_shp_local,
+                    "raster_local": __set_polygon_set_raster_local,
+                    "arc_gis_online": __set_polygon_arcgis_online,
+                    "s3": __set_polygon_s3,
+                    "other": None
+                }
+    
     # PREDEFINED DS FILTER FUNCTIONS 
     # NIFC 
     def filter_nifc_interagency_history_local(self, df):
@@ -209,6 +214,10 @@ class InputReference():
         df = df[df.GIS_ACRES != 0]
         df.set_crs(self._crs)
         df = df[df.FIRE_YEAR == str(df_year)]
+        if df.shape[0] == 0:
+            assert 1 == 0, "No possible"
+            sys.exit()
+        
         df['DATE_NOT_NONE'] = df.apply(lambda row : getattr(row, 'DATE_CUR') is not None, axis = 1)
         df = df[df.DATE_NOT_NONE == True]
         df['DATE_LEN_VALID'] = df.apply(lambda row : len(getattr(row, 'DATE_CUR')) == 8 , axis = 1)
