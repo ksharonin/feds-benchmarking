@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from botocore.exceptions import NoCredentialsError, PartialCredentialsError, EndpointConnectionError
 
 # class imports
+import Utilities
 from Input_Reference import InputReference
 from Input_VEDA import InputVEDA
 
@@ -49,6 +50,7 @@ class OutputCalculation():
         # PROGRAM SET
         self._polygons = None
         self._dump = None # content to dump into file
+        self._s3_url = None # possibly delete?
         
         # SINGLE SETUP
         self.__set_up_master()
@@ -72,13 +74,16 @@ class OutputCalculation():
         assert self._output_format in OUTPUT_FORMATS, f"Provided output format {self._output_format} is NOT VALID, select only from implemented formats: {OUTPUT_FORMATS}"
         assert self.__set_up_valid_maap_url, f"Invalid URL: see assertions and/or possibly missing s3://maap-ops-workspace/shared/ in url. Provided url: {self._output_maap_url}"
         
-        # generate file type based on format
         
         # veda and ref matching 
         
         # run calculations
         
+        # generate file type based on format
+        # TODO
+        
         # write to outputs and call plots
+        # TODO
         
         return self
     
@@ -86,19 +91,32 @@ class OutputCalculation():
         """ given a maap-ops-workspace url, check if valid with naming + s3 access"""
         
         maap_ops_contained ="s3://maap-ops-workspace/shared/" in self._output_maap_url
+        s3_url = self._output_maap_url 
         
         try:
-            # fetch s3 bucket and check if exists (not concerned w key since we will be making item)
-            s3_url_parts = s3_url.split('/')
-            if len(s3_url_parts) < 4 or s3_url_parts[0] != 's3:' or s3_url_parts[1] != '' or s3_url_parts[2] != '':
-                return False
-
-            bucket_name = s3_url_parts[3]
+            # try:
             s3 = boto3.client('s3')
-            s3.head_bucket(Bucket=bucket_name)
-            # s3.head_object(Bucket=bucket_name, Key=key)
+            bucket, key, nested = Utilities.split_s3_path(s3_url)
 
-            return True and maap_ops_contained
+            if nested:
+                # iter and locate bucket
+                # List objects in the parent bucket with the specified prefix
+                assert len(bucket) == 2, "FATAL: bucket + prefix design should only be len2"
+                response = s3.list_objects_v2(Bucket=bucket[0], Prefix=bucket[1])
+                folders = set(object['Key'][:object['Key'].rfind('/')+1] for object in response['Contents'] if '/' in object['Key'])
+                if bucket[1] in folders: 
+                    return True and maap_ops_contained
+                else:
+                    logger.error(f"ERR: prefix {bucket[1]} not located; invalid url passed" {self._output_maap_url}")
+                    return False
+            else:
+                s3 = boto3.resource('s3')
+                obj = s3.Bucket(bucket)
+            
+                if bucket_obj.creation_date:
+                    return True and maap_ops_contained
+                else:
+                    return False
         
         except NoCredentialsError:
             print("AWS credentials not found. Please configure your AWS credentials.")
@@ -111,6 +129,24 @@ class OutputCalculation():
 
         return False
     
+    def __set_up_output_maap_file(self):
+        """ with a valid maap-ops-workspace url (bucket + key) --> make an object in the bucket with prefix; rechecks access should any edge cases occur (e.g. aws going down/skipping)"""
+        
+        # test out bucket access and put in object if available
+        s3_url = self._output_maap_url 
+                                 
+        # TODO: into nested bucket
+
+        s3.put_object(
+            Bucket=buckey,
+            Key=key+'.'+{self._output_format} # since only name is passed, must add on prefix
+        )
+        
+    
+    def closest_date_match(self) -> list:
+        """ given the veda and reference polygons -> return list mapping the veda input to closest reference polygons"""
+        # TODO
+        return list
     
     def format_for_file(self):
         # TODO

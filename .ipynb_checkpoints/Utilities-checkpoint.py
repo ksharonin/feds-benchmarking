@@ -59,6 +59,26 @@ def check_crs(crs_in: int) -> bool:
     except Exception as gen_err:
         return False
 
+# S3 PROCESSING & ACCESS
+def split_s3_path(s3_path: str):
+    """ for bucket and key extraction"""
+    
+    path_parts=s3_path.replace("s3://","").split("/")
+    nested = False
+    
+    if len(path_parts) == 2:
+        # only bucket + key
+        bucket=path_parts.pop(0)
+        key="/".join(path_parts)
+        
+    else:
+        key = path_parts.pop()
+        bucket = [path_parts[0], ""]
+        for concat in path_parts[1:]:
+            bucket[1] = bucket[1] + concat + "/"
+        nested = True
+    
+    return bucket, key, nested
 
 # DECORATORS
 # TODO
