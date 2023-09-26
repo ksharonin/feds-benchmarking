@@ -36,6 +36,7 @@ class OutputCalculation():
                  ref_input: InputReference, 
                  output_format: str, 
                  output_maap_url: str,
+                 day_search_range: int,
                  print_on: bool,
                  plot_on: bool):
 
@@ -44,11 +45,13 @@ class OutputCalculation():
         self._ref_input = ref_input
         self._output_format = output_format
         self._output_maap_url = output_maap_url
+        self._day_search_range = day_search_range
         self._print_on = print_on
         self._plot_on = plot_on
         
         # PROGRAM SET
         self._polygons = None
+        self._master_result = None # set from running the calculation -> dict of lists? index syncrhonized?
         self._dump = None # content to dump into file
         self._s3_url = None # possibly delete?
         
@@ -73,18 +76,23 @@ class OutputCalculation():
         
         assert self._output_format in OUTPUT_FORMATS, f"Provided output format {self._output_format} is NOT VALID, select only from implemented formats: {OUTPUT_FORMATS}"
         assert self.__set_up_valid_maap_url, f"Invalid URL: see assertions and/or possibly missing s3://maap-ops-workspace/shared/ in url. Provided url: {self._output_maap_url}"
-        
-        
-        # veda and ref matching 
+        assert self._day_search_range < 8, f"Excessive provided day range {self._day_search_range}; select smaller search period that is < 8 (or manually edit setting in __set_up_master of Output_Calculation.py"
         
         # run calculations
+        # veda and ref matching 
+        self.__run_calculations() # --> internally finds best matches and runs on the best matches
         
-        # generate file type based on format
-        # TODO
-        
+        # generate file type based on format   
         # write to outputs and call plots
-        # TODO
+        self.__set_up_output_maap_file()
+        self.__write_to_output_file()
         
+        # do printing/plotting if enable
+        if self._print_on:
+            self.__print_output()
+        if self._plot_on:
+            self.__plot_output()
+            
         return self
     
     def __set_up_valid_maap_url(self):
@@ -129,24 +137,122 @@ class OutputCalculation():
 
         return False
     
+    def __run_calculations(self):
+        """ orchestrate all calculations; either return back to enable output write or write here"""
+        # veda polygon index mapping to reference index of closest type (or None)
+        index_pairs = OutputCalculation.closest_date_match(self)
+                                 
+        for veda_ref_pair in index_pairs:
+            # e.g. (4, 1) <- veda index 4 best matches with ref poly at index 1
+            # fetch correspoding polygons
+            veda_poly = self._veda_input[['index'] == veda_ref_pair[0]]
+            ref_poly = self._ref_input[['index'] == veda_ref_pair[1]]                    
+                                 
+        return self
+                                 
+                                 
     def __set_up_output_maap_file(self):
         """ with a valid maap-ops-workspace url (bucket + key) --> make an object in the bucket with prefix; rechecks access should any edge cases occur (e.g. aws going down/skipping)"""
         
         # test out bucket access and put in object if available
-        s3_url = self._output_maap_url 
+        # s3_url = self._output_maap_url 
                                  
         # TODO: into nested bucket
-
-        s3.put_object(
-            Bucket=buckey,
-            Key=key+'.'+{self._output_format} # since only name is passed, must add on prefix
-        )
+        # s3.put_object(
+            # Bucket=buckey,
+            # Key=key+'.'+{self._output_format} # since only name is passed, must add on prefix
+        # )
+                                 
+        return self
         
     
+                                 
+    # GENERAL PROCESSING METHODS
+                                 
+    def get_nearest_by_date(dataset, timestamp, dayrange: int):
+        """ Identify rows of dataset with timestamp matches;
+            expects year, month, date in datetime format
+                dataset: input dataset to search for closest match
+                timestamp: timestamp we want a close match for
+            returns: dataset with d->m->y closest matches
+        """
+
+        timestamp = timestamp.item()
+        transformed = dataset.DATE_CUR_STAMP.tolist() # TODO: deal with this label? or make sure ref sets always have this
+        clos_dict = {
+          abs(timestamp.timestamp() - date.timestamp()) : date
+          for date in transformed
+        }
+
+        res = clos_dict[min(clos_dict.keys())]
+
+        # check on dayrange flexibility - trigger outer exception if failing
+        if abs(timestamp.day - res.day) > dayrange and dayrange == 7:
+            return None
+
+        assert abs(timestamp.day - res.day) <= dayrange, "FATAL: No dates found in specified range; try a more flexible range by adjusting `dayrange` var"
+        # fetch rows with res timestamp
+        finalized = dataset[dataset['DATE_CUR_STAMP'] == res]
+
+        return finalized
+                                 
+                                 
     def closest_date_match(self) -> list:
         """ given the veda and reference polygons -> return list mapping the veda input to closest reference polygons"""
-        # TODO
-        return list
+        
+        # store as (veda_poly index, ref_polygon index)
+        matches = []
+
+        # fetch polygons
+        veda_polygons = InputVEDA.polygons(self._veda_input)
+        ref_polygons = InputReference.polygons(self._ref_input)
+        
+        # iterate through all veda polys
+        for veda_poly_i in range(veda_polygons.shape[0]):
+            # grab veda polygon
+            curr_veda_poly = veda_polygons.iloc[[veda_poly_i]]
+            # indices of refs that intersected with this veda poly
+            curr_finds = []
+            
+            # PHASE 1: FIND INTERSECTIONS OF ANY KIND
+            for ref_poly_i in range(ref_polygons.shape[0]):
+                curr_ref_poly = ref_polygons.iloc[[ref_poly_i]]
+                intersect = gpd.overlay(curr_ref_poly, curr_veda_poly, how='intersection')
+                if not intersect.empty:
+                    curr_finds.append(ref_poly_i)
+           
+            if len(curr_finds) == 0:
+                # for later calculations, this veda polygon is not paired with any ref poly
+                logger.warning(f'NO MATCHES FOUND FOR VEDA_POLYGON AT INDEX: {veda_polyons['index'][veda_poly_i].values[0]}; UNABLE TO FIND BEST DATE MATCHES, ATTACHING NONE FOR REFERENCE INDEX')
+                matches.append((veda_polyons['index'][veda_poly_i].values[0], None))
+                continue
+            
+            
+            timestamp = curr_veda_poly.t # veda time stamp - 2023-09-22T12:00:00 in str format 
+            set_up_finds = ref_polygons.take(curr_finds)
+                                 
+            # PHASE 2: GET BEST TIME STAMP SET, TEST IF INTERSECTIONS FIT THIS BEST DATE
+            try:
+               time_matches = OutputCalculation.get_nearest_by_date(set_up_finds, timestamp, self._day_search_range)
+            except Exception as e:
+                logger.warning((f'WARNING: VEDA POLY WITH INDEX {veda_polyons['index'][veda_poly_i].values[0]} HAS NO INTERSECTIONS AT BEST DATES:  ATTACHING NONE FOR REFERENCE INDEX')
+                matches.append((veda_polyons['index'][veda_poly_i].values[0], None))
+                continue
+            if time_matches is None:
+                logger.error(f'FAILED: No matching dates found even with provided day search range window: {self._day_search_range}, critical benchmarking failure.')
+                sys.exit()
+            
+            # PHASE 3: FLATTEN TIME MATCHES + INTERSECTING
+            # should multiple candidates occur, flag with error
+            intersect_and_date = [time_matches.iloc[[indx]]['index'].values[0] for indx in range(time_matches.shape[0])]
+            # intersect_and_date = [time_matches.iloc[[indx]] for indx in range(time_matches.shape[0])]
+            assert len(intersect_and_date) != 0, "FATAL: len 0 should not occur with the intersect + best date array"
+            if len(intersect_and_date) > 1:
+                logger.warning(f'VEDA polygon at index {veda_polyons['index'][veda_poly_i].values[0]} has MULTIPLE qualifying polygons to compare against; will attach {len(intersect_and_date)} tuples for this index.')
+            [matches.append((veda_polyons['index'][veda_poly_i].values[0], a_match)) for a_match in intersect_and_date]
+            
+                               
+        return matches
     
     def format_for_file(self):
         # TODO

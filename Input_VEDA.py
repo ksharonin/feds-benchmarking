@@ -175,17 +175,11 @@ class InputVEDA():
         if not perm_results["numberMatched"] == perm_results["numberReturned"]:
             logging.warning('INPUTVEDA: provided limit cuts out items of possible interest; consider upping limit') 
             
-        self._polygons = perm_results
+        df = gpd.GeoDataFrame.from_features(perm_results["features"])
+        df['index'] = df.index
+        self._polygons = df
         
         return self
-        
-    
-    def load_api_polygons(self) -> gpd.geodataframe.GeoDataFrame:
-        """ assuming __set_api_polygons successfully ran; load api polygons
-             return associated geoDataFrame; can apply plotting, analysis to frame etc.
-        """
-        
-        return gpd.GeoDataFrame.from_features(self._polygons["features"])
     
     
     

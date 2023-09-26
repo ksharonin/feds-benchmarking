@@ -223,6 +223,7 @@ class InputReference():
         df['DATE_LEN_VALID'] = df.apply(lambda row : len(getattr(row, 'DATE_CUR')) == 8 , axis = 1)
         df = df[df.DATE_LEN_VALID == True]
         df['DATE_CUR_STAMP'] =  df.apply(lambda row : datetime.strptime(getattr(row, 'DATE_CUR'), nifc_date_format), axis = 1)
+        df['index'] = df.index
         
         return df
     
