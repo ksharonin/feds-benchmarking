@@ -51,7 +51,7 @@ class OutputCalculation():
         
         # PROGRAM SET
         self._polygons = None
-        self._master_result = None # set from running the calculation -> dict of lists? index syncrhonized?
+        self._calculations = None # set from running the calculation -> dict of lists? index syncrhonized?
         self._dump = None # content to dump into file
         self._s3_url = None # possibly delete?
         
@@ -77,17 +77,17 @@ class OutputCalculation():
         assert self._output_format in OUTPUT_FORMATS, f"Provided output format {self._output_format} is NOT VALID, select only from implemented formats: {OUTPUT_FORMATS}"
         assert self.__set_up_valid_maap_url, f"Invalid URL: see assertions and/or possibly missing s3://maap-ops-workspace/shared/ in url. Provided url: {self._output_maap_url}"
         assert self._day_search_range < 8, f"Excessive provided day range {self._day_search_range}; select smaller search period that is < 8 (or manually edit setting in __set_up_master of Output_Calculation.py"
+        assert InputVEDA.crs(self._veda_input) == InputVEDA.crs(self._ref_input), "Mismatching CRS for VEDA and reference; must correct before continuing"
+        
         
         # run calculations
-        # veda and ref matching 
         self.__run_calculations() # --> internally finds best matches and runs on the best matches
         
-        # generate file type based on format   
-        # write to outputs and call plots
+        # TODO
         self.__set_up_output_maap_file()
         self.__write_to_output_file()
         
-        # do printing/plotting if enable
+        # TODO
         if self._print_on:
             self.__print_output()
         if self._plot_on:
@@ -141,13 +141,58 @@ class OutputCalculation():
         """ orchestrate all calculations; either return back to enable output write or write here"""
         # veda polygon index mapping to reference index of closest type (or None)
         index_pairs = OutputCalculation.closest_date_match(self)
+        
+        calculations = { 'index_pairs': index_pairs,
+                         'ratio': [],
+                         'accuracy': [],
+                         'precision': [],
+                         'recall': [],
+                         'iou': [],
+                         'f1': [],
+                         'symm_ratio': []
+                       }
                                  
-        for veda_ref_pair in index_pairs:
-            # e.g. (4, 1) <- veda index 4 best matches with ref poly at index 1
-            # fetch correspoding polygons
+        for veda_ref_pair in index_pairs: # e.g. (4, 1) <- veda index 4 best matches with ref poly at index 1
+                                 
+            skip_first_key = True
+                                 
+            # no reference polygon --> attach none to tracked calculations
+            if (veda_ref_pair[1] is None):
+                for key in calculations:
+                    if skip_first_key:
+                        skip_first_key = False
+                        continue  # Skip the first key
+                    calculations[key].append(None)
+           
+            # fetch corresponding polygons
             veda_poly = self._veda_input[['index'] == veda_ref_pair[0]]
-            ref_poly = self._ref_input[['index'] == veda_ref_pair[1]]                    
-                                 
+            ref_poly = self._ref_input[['index'] == veda_ref_pair[1]]
+               
+            # run through calculations
+            ratio = OutputCalculation.ratioCalculation(veda_poly, ref_poly)
+            accuracy = OutputCalculation.accuracyCalculation(veda_poly, ref_poly)
+            precision = OutputCalculation.precisionCalculation(veda_poly, ref_poly)
+            recall = OutputCalculation.recallCalculation(veda_poly, ref_poly)
+            iou= OutputCalculation.IOUCalculation(veda_poly, ref_poly)
+            f1 = OutputCalculation.f1ScoreCalculation(veda_poly, ref_poly) 
+            symm_ratio = OutputCalculation.symmDiffRatioCalculation(veda_poly, ref_poly) # indep calc
+            
+            # add to tracking arr                    
+            calculations['ratio'].append(ratio)
+            calculations['accuracy'].append(accuracy)
+            calculations['precision'].append(precision)
+            calculations['recall'].append(recall)
+            calculations['iou'].append(iou)
+            calculations['f1'].append(f1)
+            calculations['symm_ratio'].append(symm_ratio)
+            
+        # verify same sizing
+        for key in calculations: 
+            assert len(calculations[key]) == len(index_pairs), f"FATAL: mismatching sizing of arr at key {key} for calculations"
+        
+        # persist calcs in dict form
+        self._calculations = calculations
+        
         return self
                                  
                                  
@@ -265,84 +310,6 @@ class OutputCalculation():
 
     
     #### WARNING: EXPERIMENTAL METHODS BELOW, NOT CONFORMING TO OOP DESIGN ###   
-    
-    # EXPERIMENTAL MATCHING
-    def check_crs_match(self) -> bool:
-        """ check both crs' are matching"""
-        # TODO
-        return True
-    
-    def find_closest_time_pairs(self):
-        # nifc-perim pairs as tuples
-        # i.e. (perimeter FEDS instance, NIFC match)
-        comparison_pairs = []
-
-        # per FEDS output perim -> get best NIFC match(es) by date
-        print('Per FEDS output, identify best NIFC match...')
-        for instance in tqdm(range(finalized_williams.shape[0])):
-
-            # collection of indices relative to year_perims
-            insc_indices = []
-            # master matches with intersections/timestemp filtering
-            intersd = []
-
-            # iterate on all year_perims and inersect
-            for insc in range(year_perims.shape[0]):
-                # fetch nifc instance
-                curr_nifc = year_perims.iloc[[insc]]
-                intersect = gpd.overlay(curr_nifc,finalized_williams.iloc[[instance]], how='intersection')
-                # cont if empty
-                if not intersect.empty:
-                    insc_indices.append(insc)
-                # else: continue
-
-            if len(insc_indices) == 0:
-                print('WARNING: insc_indices was none -> skipping step')
-                continue
-
-            # all current indices present get_nearest check opportunities
-            timestamp = finalized_williams.iloc[[instance]].t
-            # apply insc_indices to pick out intersect matches
-            reduced = year_perims.take(insc_indices)
-            # match run with get nearest
-            # although its really picky -> try for now
-
-            # print(f'VERBOSE: reduced: {reduced}, timestamp: {timestamp}')
-            try:
-                matches = PerimFuncs.get_nearest(reduced, timestamp, PerimConsts.curr_dayrange)
-            except:
-                # print('WARNING get_nearest failed: continue in instance comparison')
-                # indicates no match in given range -> append to failure list 
-                print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
-                comparison_pairs.append((finalized_williams.iloc[[instance]], None))
-                continue
-
-            # all matches should act as intersd -> extract from DF
-            if matches is None:
-                # @TODO: improve handling -> likely just continue and report failed benching
-                raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
-
-            intersd = [matches.iloc[[ing]] for ing in range(matches.shape[0])]
-
-            if matches is None:
-                # @TODO: improve handling -> likely just continue and report failed benching
-                raise Exception('FAILED: No matching dates found even with 7 day window, critical benchmarking failure.')
-
-            if len(intersd) == 0:
-                # print(f'WARNING: Perim master row ID: {finalized_williams.iloc[[instance]].index} at index {instance} as NO INTERSECTIONS at closest date. Storing and will report 0 accuracy.')
-                # comparison_pairs.append((finalized_williams.iloc[[instance]], None))
-                assert 1==0, "case shouldn't exist, throw exception"
-
-            elif len(intersd) > 1:
-                # if multiple have overlay -> store them with a warning 
-                print(f'NOTICE: More thane 1, in total: {len(matches)} NIFC date matches, intersect with perimeter master row ID: {finalized_williams.iloc[[instance]].index} with index in finalized_willaims: {instance}, storing all as pairs')
-
-                # iterate and generate tuple pairs; append to list
-                [comparison_pairs.append((finalized_williams.iloc[[instance]], to_ap)) for to_ap in intersd]
-
-            else:
-                # single match -> append (perim instance, NIFC single match)
-                comparison_pairs.append((finalized_williams.iloc[[instance]], intersd[0]))
         
     
     # EXPERIMENTAL CALCULATION METHODS
