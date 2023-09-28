@@ -212,7 +212,7 @@ class OutputCalculation():
                     skip_first_key = False
                     continue  # Skip the first key
                 vals.append(calculations[key][i])
-            print(f'RESULTS FOR POLYGON VEDA AT INDEX {calculations["index_pairs"][i][0]} AGAINST REFERENCE POLYGON AT INDEX {calculations["index_pairs"][i][1]}:')
+            print(f'CALCULATED A RESULT: POLYGON VEDA AT INDEX {calculations["index_pairs"][i][0]} AGAINST REFERENCE POLYGON AT INDEX {calculations["index_pairs"][i][1]}:')
             print(f'Ratio: {vals[0]}, Accuracy: {vals[1]}, Precision: {vals[2]}, Recall: {vals[3]}, IOU: {vals[4]}, F1 {vals[5]}, Symmetric Ratio: {vals[6]}')
             print(f'All measurements in units {self._veda_input.polygons.crs.axis_info[0].unit_name}')
                                  
