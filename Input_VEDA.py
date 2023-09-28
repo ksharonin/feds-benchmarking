@@ -36,10 +36,11 @@ class InputVEDA():
                  usr_start: str,
                  usr_stop: str,
                  usr_bbox: list,
-                 crs=4326,
+                 crs,
                  access_type="api",
                  limit=1000,
                  custom_filter=False,
+                 apply_finalfire=False
                  ):
         
         # USER INPUT / FILTERS
@@ -53,6 +54,7 @@ class InputVEDA():
         self._custom_filter = custom_filter
         self._crs = CRS.from_user_input(crs)
         self._units = self._crs.axis_info[0].unit_name
+        self._apply_finalfire = apply_finalfire
         
         # PROGRAM SET
         self._api_url = None
@@ -132,10 +134,13 @@ class InputVEDA():
         
         # set extent info with properties 
         self._ds_bbox = perm["extent"]["spatial"]["bbox"]
-        self._crs = perm["extent"]["spatial"]["crs"]
+        # self._crs = perm["extent"]["spatial"]["crs"] <-- we assume passed usr crs is accurate, see below warning
         self._range_start = perm["extent"]["temporal"]["interval"][0][0]
         self._range_stop = perm["extent"]["temporal"]["interval"][0][1]
         self._queryables = get_collections.collection_queryables(self._collection)["properties"]
+        
+        if "CRS84" not in perm["extent"]["spatial"]["crs"]:
+            print('WARNING: API CRS NOT STANDARD CRS84; passed in CRS assumed to be functional w/o checking ds')
         
         # return perm
         return self
@@ -177,6 +182,14 @@ class InputVEDA():
             
         df = gpd.GeoDataFrame.from_features(perm_results["features"])
         df['index'] = df.index
+        # given crs set by user --> do to_crs
+        df = df.set_crs(self._crs)
+        
+        # apply finalized fire perim: take highest indices of duplicate fire ids
+        if self._title == "firenrt" and self._apply_finalfire:
+            sorted_gdf = df.sort_values(by=['fireid', 'index'], ascending=[True, False])
+            df = sorted_gdf.drop_duplicates(subset='fireid', keep='first')
+            
         self._polygons = df
         
         return self

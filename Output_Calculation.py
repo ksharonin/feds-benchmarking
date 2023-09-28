@@ -11,6 +11,7 @@ import fsspec
 import boto3
 import geopandas as gpd
 import datetime as dt
+import logging
 
 from pyproj import CRS
 from owslib.ogcapi.features import Features
@@ -74,18 +75,18 @@ class OutputCalculation():
     def __set_up_master(self):
         """ set up outputcalc instance with checks and generations; run main calculations"""
         
-        assert self._output_format in OUTPUT_FORMATS, f"Provided output format {self._output_format} is NOT VALID, select only from implemented formats: {OUTPUT_FORMATS}"
+        assert self._output_format in OutputCalculation.OUTPUT_FORMATS, f"Provided output format {self._output_format} is NOT VALID, select only from implemented formats: {OutputCalculation.OUTPUT_FORMATS}"
         assert self.__set_up_valid_maap_url, f"Invalid URL: see assertions and/or possibly missing s3://maap-ops-workspace/shared/ in url. Provided url: {self._output_maap_url}"
         assert self._day_search_range < 8, f"Excessive provided day range {self._day_search_range}; select smaller search period that is < 8 (or manually edit setting in __set_up_master of Output_Calculation.py"
-        assert InputVEDA.crs(self._veda_input) == InputVEDA.crs(self._ref_input), "Mismatching CRS for VEDA and reference; must correct before continuing"
+        assert self._veda_input.crs == self._ref_input.crs, f"Mismatching CRS for VEDA and reference; must correct before continuing: veda: {self._veda_input.crs} vs ref: {self._ref_input.crs}"
         
         
         # run calculations
         self.__run_calculations() # --> internally finds best matches and runs on the best matches
         
         # TODO
-        self.__set_up_output_maap_file()
-        self.__write_to_output_file()
+        # self.__set_up_output_maap_file()
+        # self.__write_to_output_file()
         
         # TODO
         if self._print_on:
@@ -115,7 +116,7 @@ class OutputCalculation():
                 if bucket[1] in folders: 
                     return True and maap_ops_contained
                 else:
-                    logger.error(f"ERR: prefix {bucket[1]} not located; invalid url passed" {self._output_maap_url}")
+                    logging.error(f"ERR: prefix {bucket[1]} not located; invalid url passed {self._output_maap_url}")
                     return False
             else:
                 s3 = boto3.resource('s3')
@@ -163,10 +164,11 @@ class OutputCalculation():
                         skip_first_key = False
                         continue  # Skip the first key
                     calculations[key].append(None)
+                continue
            
             # fetch corresponding polygons
-            veda_poly = self._veda_input[['index'] == veda_ref_pair[0]]
-            ref_poly = self._ref_input[['index'] == veda_ref_pair[1]]
+            veda_poly = self._veda_input.polygons[self._veda_input.polygons['index'] == veda_ref_pair[0]]
+            ref_poly = self._ref_input.polygons[self._ref_input.polygons['index'] == veda_ref_pair[1]]
                
             # run through calculations
             ratio = OutputCalculation.ratioCalculation(veda_poly, ref_poly)
@@ -192,10 +194,29 @@ class OutputCalculation():
         
         # persist calcs in dict form
         self._calculations = calculations
+        logging.info('Calculations complete!')
         
         return self
                                  
+    def __print_output(self):
+        """ print output using the _calculations var"""
                                  
+        calculations = self._calculations
+        
+        for i in range(len(calculations['index_pairs'])):
+            skip_first_key = True
+            # per each --> print value at corresponding i index
+            vals = []
+            for key in calculations:
+                if skip_first_key:
+                    skip_first_key = False
+                    continue  # Skip the first key
+                vals.append(calculations[key][i])
+            print(f'RESULTS FOR POLYGON VEDA AT INDEX {calculations["index_pairs"][i]}:')
+            print(f'Ratio: {vals[0]}, Accuracy: {vals[1]}, Precision: {vals[2]}, Recall: {vals[3]}, IOU: {vals[4]}, F1 {vals[5]}, Symmetric Ratio: {vals[6]}')
+                                 
+        return self
+    
     def __set_up_output_maap_file(self):
         """ with a valid maap-ops-workspace url (bucket + key) --> make an object in the bucket with prefix; rechecks access should any edge cases occur (e.g. aws going down/skipping)"""
         
@@ -222,7 +243,7 @@ class OutputCalculation():
             returns: dataset with d->m->y closest matches
         """
 
-        timestamp = timestamp.item()
+        # timestamp = timestamp.item()
         transformed = dataset.DATE_CUR_STAMP.tolist() # TODO: deal with this label? or make sure ref sets always have this
         clos_dict = {
           abs(timestamp.timestamp() - date.timestamp()) : date
@@ -249,8 +270,11 @@ class OutputCalculation():
         matches = []
 
         # fetch polygons
-        veda_polygons = InputVEDA.polygons(self._veda_input)
-        ref_polygons = InputReference.polygons(self._ref_input)
+        veda_polygons = self._veda_input.polygons
+        ref_polygons = self._ref_input.polygons
+        
+        logging.info(f'Number of total veda_polygons: {len(self._veda_input.polygons.index)}')
+        logging.info(f'Number of total ref_polygons: {len(self._ref_input.polygons.index)}')
         
         # iterate through all veda polys
         for veda_poly_i in range(veda_polygons.shape[0]):
@@ -268,8 +292,9 @@ class OutputCalculation():
            
             if len(curr_finds) == 0:
                 # for later calculations, this veda polygon is not paired with any ref poly
-                logger.warning(f'NO MATCHES FOUND FOR VEDA_POLYGON AT INDEX: {veda_polyons['index'][veda_poly_i].values[0]}; UNABLE TO FIND BEST DATE MATCHES, ATTACHING NONE FOR REFERENCE INDEX')
-                matches.append((veda_polyons['index'][veda_poly_i].values[0], None))
+                logging.warning(f'NO MATCHES FOUND FOR VEDA_POLYGON AT INDEX: {veda_polygons["index"].iloc[veda_poly_i]}; UNABLE TO FIND BEST DATE MATCHES, ATTACHING NONE FOR REFERENCE INDEX')
+               
+                matches.append((veda_polygons['index'].iloc[veda_poly_i], None))
                 continue
             
             
@@ -278,13 +303,15 @@ class OutputCalculation():
                                  
             # PHASE 2: GET BEST TIME STAMP SET, TEST IF INTERSECTIONS FIT THIS BEST DATE
             try:
-               time_matches = OutputCalculation.get_nearest_by_date(set_up_finds, timestamp, self._day_search_range)
+                timestamp = datetime.strptime(timestamp.values[0], "%Y-%m-%dT%H:%M:%S")
+                time_matches = OutputCalculation.get_nearest_by_date(set_up_finds, timestamp, self._day_search_range)
             except Exception as e:
-                logger.warning((f'WARNING: VEDA POLY WITH INDEX {veda_polyons['index'][veda_poly_i].values[0]} HAS NO INTERSECTIONS AT BEST DATES:  ATTACHING NONE FOR REFERENCE INDEX')
-                matches.append((veda_polyons['index'][veda_poly_i].values[0], None))
+                logging.warning(f'Encountered error when running get_nearest_by_date: {e}')
+                logging.warning(f'DUE TO ERR: VEDA POLY WITH INDEX {veda_polygons["index"].iloc[veda_poly_i]} HAS NO INTERSECTIONS AT BEST DATES:  ATTACHING NONE FOR REFERENCE INDEX')
+                matches.append((veda_polygons['index'].iloc[veda_poly_i], None))
                 continue
             if time_matches is None:
-                logger.error(f'FAILED: No matching dates found even with provided day search range window: {self._day_search_range}, critical benchmarking failure.')
+                logging.error(f'FAILED: No matching dates found even with provided day search range window: {self._day_search_range}, critical benchmarking failure.')
                 sys.exit()
             
             # PHASE 3: FLATTEN TIME MATCHES + INTERSECTING
@@ -293,10 +320,11 @@ class OutputCalculation():
             # intersect_and_date = [time_matches.iloc[[indx]] for indx in range(time_matches.shape[0])]
             assert len(intersect_and_date) != 0, "FATAL: len 0 should not occur with the intersect + best date array"
             if len(intersect_and_date) > 1:
-                logger.warning(f'VEDA polygon at index {veda_polyons['index'][veda_poly_i].values[0]} has MULTIPLE qualifying polygons to compare against; will attach {len(intersect_and_date)} tuples for this index.')
-            [matches.append((veda_polyons['index'][veda_poly_i].values[0], a_match)) for a_match in intersect_and_date]
+                logging.warning(f'VEDA polygon at index {veda_polygons["index"].iloc[veda_poly_i]} has MULTIPLE qualifying polygons to compare against; will attach {len(intersect_and_date)} tuples for this index.')
+            [matches.append((veda_polygons['index'].iloc[veda_poly_i], a_match)) for a_match in intersect_and_date]
             
                                
+        logging.info('Nearest Date matching complete!')
         return matches
     
     def format_for_file(self):
@@ -390,7 +418,7 @@ class OutputCalculation():
             return basic intersection
         """
         overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
-        result = areaCalculation(overlay) # overlay.geometry.area.item()
+        result = OutputCalculation.areaCalculation(overlay) # overlay.geometry.area.item()
         return result
 
     def falseNeg(feds_inst, nifc_inst):
@@ -409,7 +437,7 @@ class OutputCalculation():
 
         feds_neg = gpd.overlay(net_bounding, feds_inst, how='difference')
         result = gpd.overlay(feds_neg, nifc_inst, keep_geom_type=False, how='intersection')
-        result = areaCalculation(result)
+        result = OutputCalculation.areaCalculation(result)
 
         return result
 
@@ -430,7 +458,7 @@ class OutputCalculation():
         nifc_neg = gpd.overlay(net_bounding, nifc_inst, how='difference')
 
         result = gpd.overlay(nifc_neg, feds_inst, keep_geom_type=False, how='intersection')
-        result = areaCalculation(result)
+        result = OutputCalculation.areaCalculation(result)
 
         return result
 
@@ -445,7 +473,7 @@ class OutputCalculation():
 
         # generate bounding box fitting both instances (even if multi-poly)
         net_bounding = unionr.geometry.envelope
-        net_barea = areaCalculation(net_bounding)
+        net_barea = OutputCalculation.areaCalculation(net_bounding)
         # convert to data frame
         net_bounding = net_bounding.to_frame()
 
@@ -455,7 +483,7 @@ class OutputCalculation():
 
         # TN = calculate intersection of both "negatives"
         inter_neg = gpd.overlay(feds_neg, nifc_neg, keep_geom_type=False, how='intersection')
-        result = areaCalculation(inter_neg)
+        result = OutputCalculation.areaCalculation(inter_neg)
 
         return result
 
@@ -467,7 +495,7 @@ class OutputCalculation():
         unionr = gpd.overlay(feds_inst, nifc_inst, how='union')
         # generate bounding box fitting both instances (even if multi-poly)
         net_bounding = unionr.geometry.envelope
-        net_barea = areaCalculation(net_bounding)
+        net_barea = OutputCalculation.areaCalculation(net_bounding)
         # convert to data frame
         # net_bounding = net_bounding.to_frame()
 
@@ -478,8 +506,8 @@ class OutputCalculation():
             FEDS_B/REF_B(burned area)
         """
         # sum area (since mul entries may exist) up by calc
-        feds_area = areaCalculation(feds_inst)
-        nifc_area = areaCalculation(nifc_inst)
+        feds_area = OutputCalculation.areaCalculation(feds_inst)
+        nifc_area = OutputCalculation.areaCalculation(nifc_inst)
 
         assert feds_area is not None, "None type detected for area; something went wrong"
         assert nifc_area is not None, "None type detected for area; something went wrong"
@@ -493,9 +521,9 @@ class OutputCalculation():
             TN == agreed inverse by bounding box
             TP == FRAP + FEDS agree on burned (intersect)
         """
-        TN = trueNeg(feds_inst, nifc_inst)
-        TP = truePos(feds_inst, nifc_inst)
-        AREA_TOTAL = areaTotal(feds_inst, nifc_inst)
+        TN = OutputCalculation.trueNeg(feds_inst, nifc_inst)
+        TP = OutputCalculation.truePos(feds_inst, nifc_inst)
+        AREA_TOTAL = OutputCalculation.areaTotal(feds_inst, nifc_inst)
 
         return (TN + TP) / AREA_TOTAL
 
@@ -508,8 +536,8 @@ class OutputCalculation():
         assert isinstance(feds_inst, pd.DataFrame) and isinstance(nifc_inst, pd.DataFrame), "Object types will fail intersection calculation; check inputs"
         # calculate intersect (agreement) -> divide
         # overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
-        TP = truePos(feds_inst, nifc_inst)
-        feds_area = areaCalculation(feds_inst)
+        TP = OutputCalculation.truePos(feds_inst, nifc_inst)
+        feds_area = OutputCalculation.areaCalculation(feds_inst)
 
         return TP / feds_area
 
@@ -519,8 +547,8 @@ class OutputCalculation():
             REF_B == all burned of nifc/source
         """
         # overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
-        TP = truePos(feds_inst, nifc_inst)
-        nifc_area = areaCalculation(nifc_inst)
+        TP = OutputCalculation.truePos(feds_inst, nifc_inst)
+        nifc_area = OutputCalculation.areaCalculation(nifc_inst)
 
         return TP / nifc_area
 
@@ -530,17 +558,17 @@ class OutputCalculation():
         """
 
         # overlay = gpd.overlay(feds_inst, nifc_inst, how='intersection')
-        TP = truePos(feds_inst, nifc_inst)
-        FP = falsePos(feds_inst, nifc_inst) # feds + nifc agree on no burning
-        FN = falseNeg(feds_inst, nifc_inst) # feds thinks unburned when nifc burned
+        TP = OutputCalculation.truePos(feds_inst, nifc_inst)
+        FP = OutputCalculation.falsePos(feds_inst, nifc_inst) # feds + nifc agree on no burning
+        FN = OutputCalculation.falseNeg(feds_inst, nifc_inst) # feds thinks unburned when nifc burned
 
         return 0
 
     def f1ScoreCalculation(feds_inst, nifc_inst):
         """ 2 * (Precision * Recall)/(Precision + Recall)
         """
-        precision = precisionCalculation(feds_inst, nifc_inst)
-        recall = recallCalculation(feds_inst, nifc_inst)
+        precision = OutputCalculation.precisionCalculation(feds_inst, nifc_inst)
+        recall = OutputCalculation.recallCalculation(feds_inst, nifc_inst)
         calc = 2 * (precision*recall)/(precision+recall)
 
         return calc
@@ -554,8 +582,8 @@ class OutputCalculation():
         # use item() to fetch int out of values
         assert sym_diff.shape[0] == 1, "Multiple sym_diff entries identified; pair accuracy evaluation will fail."
         # calculate error percent: (difference / "correct" shape aka nifc)
-        symm_area = areaCalculation(sym_diff)
-        nifc_area = areaCalculation(nifc_inst)
+        symm_area = OutputCalculation.areaCalculation(sym_diff)
+        nifc_area = OutputCalculation.areaCalculation(nifc_inst)
         # symmDiff_ratio = sym_diff.geometry.area.item() / nifc_inst.geometry.area.item()
         symmDiff_ratio = symm_area / nifc_area
 

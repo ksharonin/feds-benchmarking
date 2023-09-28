@@ -48,8 +48,8 @@ class InputReference():
                  usr_start: str,
                  usr_stop: str,
                  usr_bbox: list,
+                 crs,
                  title="none", 
-                 crs=4326,
                  control_type="defined",
                  custom_url="none",
                  custom_read_type="none",
@@ -212,7 +212,7 @@ class InputReference():
         # actions as docstring specifies
         df = df[df.geometry != None]
         df = df[df.GIS_ACRES != 0]
-        df.set_crs(self._crs)
+        df = df.set_crs(self._crs, allow_override=True)
         df = df[df.FIRE_YEAR == str(df_year)]
         if df.shape[0] == 0:
             assert 1 == 0, "No possible"
