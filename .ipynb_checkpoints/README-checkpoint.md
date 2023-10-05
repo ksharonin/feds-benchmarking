@@ -5,6 +5,7 @@ Author: Katrina Sharonin
 ## Statement of Need
 
 * What: The VEDA PEC is an add-on to the NASA MAAP platform designed to accelerate comparison of VEDA data sets with reference datasets
+    * Users should only need to interact with the library with the `BLANK_PEC_Outline.ipynb`; all python scripts are used as abstractions
     * Reference datasets can be a predefined option (i.e. already saved to a URL in MAAP) or can be user uploaded/defined
     * Calculations include: Ratio, Accuracy, Precision, Recall, IOU, F1, and Symmetric Ratio
     * Currently most support exists for the firenrt perimeter collection; seeking community feedback for new datasets
@@ -24,10 +25,14 @@ Author: Katrina Sharonin
 ## Example Usage: 
 * See `DEMO_PEC_Outline.ipynb` for a full demonstration with the Kincade Fire
 
-Functionality documentation: Is the core functionality of the software documented to a satisfactory level (e.g., API method documentation)?
+## Testing:
+* This module implements strict argument catches to block users from accessing un-implemented features
+* TBD for unit testing
 
-Automated tests: Are there automated tests or manual steps described so that the functionality of the software can be verified?
-
+## Upcoming features:
+* Output formats + plotting persistence
+* Additional pre-defined datasets for comparison
+* Potential community-shared datasets (i.e. uploaded by non-admin user, public to all to try using)
 
 ## Key Files/Classes
 * `Input_VEDA.py`: class representing a dataset input from VEDA either from API or a hard-coded path in the MAAP enviornment
