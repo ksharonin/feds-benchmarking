@@ -4,6 +4,7 @@ Output_Calculation Class
 """
 
 import glob
+import sys
 import logging
 import pandas as pd
 import geopandas as gpd
@@ -313,7 +314,9 @@ class OutputCalculation():
                 continue
             if time_matches is None:
                 logging.error(f'FAILED: No matching dates found even with provided day search range window: {self._day_search_range}, critical benchmarking failure.')
-                sys.exit()
+                logging.warning('Due to failing window, use first intersection as value')
+                time_matches = set_up_finds
+                # sys.exit()
             
             # PHASE 3: FLATTEN TIME MATCHES + INTERSECTING
             # should multiple candidates occur, flag with error
