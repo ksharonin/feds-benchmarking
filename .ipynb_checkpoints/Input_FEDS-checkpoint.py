@@ -105,9 +105,11 @@ class InputFEDS():
             self.__set_api_url()
             self.__fetch_api_collection()
             self.__set_api_polygons()
-        else:
+        elif self._access_type == "local":
             logging.warning('API NOT SELECTED: discretion advised due to direct file access.')
             self.set_hard_dataset()
+        else:
+            raise Exception(f"Access type {self._access_type} not defined.")
     
     # API DATA ACCESS HELPERS
     def __set_api_url(self):

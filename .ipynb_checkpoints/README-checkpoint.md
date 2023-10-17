@@ -38,18 +38,92 @@ To install and use FEDS-PEC, follow these steps:
 
 4. **Quickstart:** Follow the instructions in the notebook, specifically the "User Inputs for Comparison" section, to get started.
 
+## Input Settings
+This section describes inputs for FEDS and reference datasets and acceptable values. Some input options may be implemented or unimplemented due to development
+
+### FEDS Input Settings
+- `title`: select predefined title sourced from the api, or choose `none` if using a custom local input
+    - Implemented:
+        - `"firenrt"` 
+    - Not implemented:
+        - `"none"`
+        - `"staging-stac"`
+        - `"staging-raster"`
+
+- `collection`: if using a predefined api dataset, choose a corresponding collection, otherwise choose `none` if using a custom local input
+    - Implemented:
+        - `"public.eis_fire_lf_perimeter_archive"` 
+    - Not implemented:
+        - `"none"`
+        - `"public.eis_fire_lf_fireline_archive"`
+        - `"public.eis_fire_snapshot_fireline_nrt"`
+        - `"public.eis_fire_snapshot_perimeter_nrt"`
+- `access_type`:
+    - Implemented: 
+        - `api`
+    - Not implemented: 
+        - `local`
+- `limit`: amount of features to consider for FEDS API access; warning appears if it misses any entries; set to `0` for non-api `none` datasets 
+- `filter`: `False` or a valid query that compiles with data set e.g. `"farea>5 AND duration>2"`; invalid queries will result in error
+- `apply_final_fire`: for `"firenrt`"  set this to `True` if you want the only the latest fireID to be taken per unique FireID, set `False` for other datasets 
+
+### Reference Input Settings
+- `title`:
+    - Implemented:
+        - `"nifc_interagency_history_local`
+    - Not implemented:
+        - `"nifc_arcgis_current_incidents"`
+        - `"nifc_arcgis_current_incidents_wfigs`
+        - `"nifc_arcgis_2023_latest"`
+- `control_type`:
+    - Implemented:
+        - `"defined"`
+    - Not implemented:
+        - `"custom"`
+- `custom_url`
+    - Implemented:
+        - `"none"`
+    - Not implemented:
+        - `""`
+- `custom_read_type`
+    - Implemented:
+        - `"none"`
+    - Not implemented:
+        - `""`
+- `filter`: `False` or a valid query that compiles with data set e.g. `"farea>5 AND duration>2"`; invalid queries will result in error
+
+### Shared Input Settings
+Inputs shared between FEDS and Reference
+- `date start`
+    - year, month, day, second, tz_offset_hours, tz_offset_minutes, utc_offset
+- `date stop`
+    -  year, month, day, second, tz_offset_hours, tz_offset_minutes, utc_offset
+- `crs`
+- `search bbox`: [top left longitude, top left latitude, bottom right longitude, bottom righ latitude]
+- `day_search_range`: x <= 7, used to search for matching reference polygons e.g. if x = 5 FEDS polygon finds an intersecting polygon, but it is 6 days difference in timestamp, it will not be included in the resulting output pairs.
+
+### Output Input Settings
+Define format of output and path, all used to construct `output_maap_url` 
+- `maap_username`: passed username to write into shared buckets
+- `name_for_output_file`: f"firenrt_vs_nifc_interagency_{year_start}_{search_bbox[0]}_{search_bbox[1]}_{search_bbox[2]}_{search_bbox[3]}"
+- `output_format`: 
+     - Implemented:
+        - 
+    - Not implemented:
+        - `txt`
+        - `json`
+- `print_on`
+    - Implemented:
+        - `True`
+        - `False`
+- `plot_on`
+    - Not implemented:
+        - `True`
+
+
 ## Example Usage
 
 For a comprehensive demonstration of how to use FEDS-PEC, refer to the ipynbs located in the `demos` directory, such as the `KINCADE_DEMO_FEDS_Outline.ipynb` notebook, which includes a demonstration using the Kincade Fire dataset.
-
-## Acceptable Input Settings
-Acceptable inputs are the scope of inputs that FEDS PEC is designed to accept. This section describes acceptable inputs for FEDS and reference datasets. An acceptable input may be implemented or unimplemented (marked with [NOT IMPLEMENTED])
-
-### FEDS Acceptable Input Settings
-- 
-
-### Reference Acceptable Input Settings
-- 
 
 ## Testing
 
