@@ -19,7 +19,7 @@ pd.set_option('display.max_columns',None)
 
 class InputReference():
     """ InputReference
-        Object representing an input polygon that is compared to a VEDA object
+        Object representing an input polygon that is compared to a FEDS object
         E.g. NIFC archived perimeters, CAL FIRE incidents, etc.
     
     """

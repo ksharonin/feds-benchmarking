@@ -17,9 +17,9 @@ from functools import singledispatch
 
 pd.set_option('display.max_columns',None)
 
-class InputVEDA():
-    """ InputVEDA
-        Object representing VEDA 
+class InputFEDS():
+    """ InputFEDS
+        Object representing FEDS 
         E.g. firenrt dataset 
         https://nasa-impact.github.io/veda-docs/notebooks/tutorials/mapping-fires.html
     """
@@ -101,7 +101,7 @@ class InputVEDA():
     def __set_up_master(self):
         """ set up instance properties """
         if self._access_type == "api":
-            assert self._title in InputVEDA.TITLE_SETS, "ERR INPUTVEDA: Invalid title provided"
+            assert self._title in InputFEDS.TITLE_SETS, "ERR INPUTFEDS: Invalid title provided"
             self.__set_api_url()
             self.__fetch_api_collection()
             self.__set_api_polygons()
@@ -113,8 +113,8 @@ class InputVEDA():
     def __set_api_url(self):
         """ fetch api url based on valid title"""
         
-        if self._title in InputVEDA.OGC_URLS:
-            self._api_url = InputVEDA.OGC_URLS[self._title]
+        if self._title in InputFEDS.OGC_URLS:
+            self._api_url = InputFEDS.OGC_URLS[self._title]
         
         return self
             
@@ -126,7 +126,7 @@ class InputVEDA():
     def __fetch_api_collection(self) -> dict:
         """ return collection using url + set up instance attributes"""
         
-        assert self._api_url is not None, "ERR INPUTVEDA: cannot fetch with a null API url"
+        assert self._api_url is not None, "ERR INPUTFEDS: cannot fetch with a null API url"
         
         # read out
         get_collections = Features(url=self._api_url)
@@ -174,11 +174,11 @@ class InputVEDA():
                 )
                 
         else:
-            logging.error(f"TODO: ERR INPUTVEDA: no setting method for the _title: {self._title}")
+            logging.error(f"TODO: ERR INPUTFEDS: no setting method for the _title: {self._title}")
             sys.exit()
         
         if not perm_results["numberMatched"] == perm_results["numberReturned"]:
-            logging.warning('INPUTVEDA: provided limit cuts out items of possible interest; consider upping limit') 
+            logging.warning('INPUTFEDS: provided limit cuts out items of possible interest; consider upping limit') 
             
         df = gpd.GeoDataFrame.from_features(perm_results["features"])
         df['index'] = df.index

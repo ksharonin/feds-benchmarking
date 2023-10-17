@@ -22,19 +22,19 @@ from botocore.exceptions import NoCredentialsError, PartialCredentialsError, End
 # class imports
 import Utilities
 from Input_Reference import InputReference
-from Input_VEDA import InputVEDA
+from Input_FEDS import InputFEDS
 
 class OutputCalculation():
     
     """ OutputCalculation
-        Class representing output calculation of veda_input vs ref_input
+        Class representing output calculation of feds_input vs ref_input
     """
     
     # implemented output formats
     OUTPUT_FORMATS = ["txt", "json"]
     
     def __init__(self, 
-                 veda_input: InputVEDA, 
+                 feds_input: InputFEDS, 
                  ref_input: InputReference, 
                  output_format: str, 
                  output_maap_url: str,
@@ -43,7 +43,7 @@ class OutputCalculation():
                  plot_on: bool):
 
         # USER INPUT / FILTERS
-        self._veda_input = veda_input
+        self._feds_input = feds_input
         self._ref_input = ref_input
         self._output_format = output_format
         self._output_maap_url = output_maap_url
@@ -61,8 +61,8 @@ class OutputCalculation():
         self.__set_up_master()
         
     @property
-    def veda_input(self):
-        return self._veda_input
+    def feds_input(self):
+        return self._feds_input
     
     @property
     def ref_input(self):
@@ -79,7 +79,7 @@ class OutputCalculation():
         assert self._output_format in OutputCalculation.OUTPUT_FORMATS, f"Provided output format {self._output_format} is NOT VALID, select only from implemented formats: {OutputCalculation.OUTPUT_FORMATS}"
         assert self.__set_up_valid_maap_url, f"Invalid URL: see assertions and/or possibly missing s3://maap-ops-workspace/shared/ in url. Provided url: {self._output_maap_url}"
         assert self._day_search_range < 8, f"Excessive provided day range {self._day_search_range}; select smaller search period that is < 8 (or manually edit setting in __set_up_master of Output_Calculation.py"
-        assert self._veda_input.crs == self._ref_input.crs, f"Mismatching CRS for VEDA and reference; must correct before continuing: veda: {self._veda_input.crs} vs ref: {self._ref_input.crs}"
+        assert self._feds_input.crs == self._ref_input.crs, f"Mismatching CRS for FEDS and reference; must correct before continuing: feds: {self._feds_input.crs} vs ref: {self._ref_input.crs}"
         
         
         # run calculations
@@ -141,7 +141,7 @@ class OutputCalculation():
     
     def __run_calculations(self):
         """ orchestrate all calculations; either return back to enable output write or write here"""
-        # veda polygon index mapping to reference index of closest type (or None)
+        # feds polygon index mapping to reference index of closest type (or None)
         index_pairs = OutputCalculation.closest_date_match(self)
         
         calculations = { 'index_pairs': index_pairs,
@@ -154,12 +154,12 @@ class OutputCalculation():
                          'symm_ratio': []
                        }
                                  
-        for veda_ref_pair in index_pairs: # e.g. (4, 1) <- veda index 4 best matches with ref poly at index 1
+        for feds_ref_pair in index_pairs: # e.g. (4, 1) <- feds index 4 best matches with ref poly at index 1
                                  
             skip_first_key = True
                                  
             # no reference polygon --> attach none to tracked calculations
-            if (veda_ref_pair[1] is None):
+            if (feds_ref_pair[1] is None):
                 for key in calculations:
                     if skip_first_key:
                         skip_first_key = False
@@ -168,17 +168,17 @@ class OutputCalculation():
                 continue
            
             # fetch corresponding polygons
-            veda_poly = self._veda_input.polygons[self._veda_input.polygons['index'] == veda_ref_pair[0]]
-            ref_poly = self._ref_input.polygons[self._ref_input.polygons['index'] == veda_ref_pair[1]]
+            feds_poly = self._feds_input.polygons[self._feds_input.polygons['index'] == feds_ref_pair[0]]
+            ref_poly = self._ref_input.polygons[self._ref_input.polygons['index'] == feds_ref_pair[1]]
                
             # run through calculations
-            ratio = OutputCalculation.ratioCalculation(veda_poly, ref_poly)
-            accuracy = OutputCalculation.accuracyCalculation(veda_poly, ref_poly)
-            precision = OutputCalculation.precisionCalculation(veda_poly, ref_poly)
-            recall = OutputCalculation.recallCalculation(veda_poly, ref_poly)
-            iou= OutputCalculation.IOUCalculation(veda_poly, ref_poly)
-            f1 = OutputCalculation.f1ScoreCalculation(veda_poly, ref_poly) 
-            symm_ratio = OutputCalculation.symmDiffRatioCalculation(veda_poly, ref_poly) # indep calc
+            ratio = OutputCalculation.ratioCalculation(feds_poly, ref_poly)
+            accuracy = OutputCalculation.accuracyCalculation(feds_poly, ref_poly)
+            precision = OutputCalculation.precisionCalculation(feds_poly, ref_poly)
+            recall = OutputCalculation.recallCalculation(feds_poly, ref_poly)
+            iou= OutputCalculation.IOUCalculation(feds_poly, ref_poly)
+            f1 = OutputCalculation.f1ScoreCalculation(feds_poly, ref_poly) 
+            symm_ratio = OutputCalculation.symmDiffRatioCalculation(feds_poly, ref_poly) # indep calc
             
             # add to tracking arr                    
             calculations['ratio'].append(ratio)
@@ -213,9 +213,9 @@ class OutputCalculation():
                     skip_first_key = False
                     continue  # Skip the first key
                 vals.append(calculations[key][i])
-            print(f'CALCULATED A RESULT: POLYGON VEDA AT INDEX {calculations["index_pairs"][i][0]} AGAINST REFERENCE POLYGON AT INDEX {calculations["index_pairs"][i][1]}:')
+            print(f'CALCULATED A RESULT: POLYGON FEDS AT INDEX {calculations["index_pairs"][i][0]} AGAINST REFERENCE POLYGON AT INDEX {calculations["index_pairs"][i][1]}:')
             print(f'Ratio: {vals[0]}, Accuracy: {vals[1]}, Precision: {vals[2]}, Recall: {vals[3]}, IOU: {vals[4]}, F1 {vals[5]}, Symmetric Ratio: {vals[6]}')
-            print(f'All measurements in units {self._veda_input.polygons.crs.axis_info[0].unit_name}')
+            print(f'All measurements in units {self._feds_input.polygons.crs.axis_info[0].unit_name}')
                                  
         return self
     
@@ -266,41 +266,41 @@ class OutputCalculation():
                                  
                                  
     def closest_date_match(self) -> list:
-        """ given the veda and reference polygons -> return list mapping the veda input to closest reference polygons"""
+        """ given the feds and reference polygons -> return list mapping the feds input to closest reference polygons"""
         
-        # store as (veda_poly index, ref_polygon index)
+        # store as (feds_poly index, ref_polygon index)
         matches = []
 
         # fetch polygons
-        veda_polygons = self._veda_input.polygons
+        feds_polygons = self._feds_input.polygons
         ref_polygons = self._ref_input.polygons
         
-        logging.info(f'Number of total veda_polygons: {len(self._veda_input.polygons.index)}')
+        logging.info(f'Number of total feds_polygons: {len(self._feds_input.polygons.index)}')
         logging.info(f'Number of total ref_polygons: {len(self._ref_input.polygons.index)}')
         
-        # iterate through all veda polys
-        for veda_poly_i in range(veda_polygons.shape[0]):
-            # grab veda polygon
-            curr_veda_poly = veda_polygons.iloc[[veda_poly_i]]
-            # indices of refs that intersected with this veda poly
+        # iterate through all feds polys
+        for feds_poly_i in range(feds_polygons.shape[0]):
+            # grab feds polygon
+            curr_feds_poly = feds_polygons.iloc[[feds_poly_i]]
+            # indices of refs that intersected with this feds poly
             curr_finds = []
             
             # PHASE 1: FIND INTERSECTIONS OF ANY KIND
             for ref_poly_i in range(ref_polygons.shape[0]):
                 curr_ref_poly = ref_polygons.iloc[[ref_poly_i]]
-                intersect = gpd.overlay(curr_ref_poly, curr_veda_poly, how='intersection')
+                intersect = gpd.overlay(curr_ref_poly, curr_feds_poly, how='intersection')
                 if not intersect.empty:
                     curr_finds.append(ref_poly_i)
            
             if len(curr_finds) == 0:
-                # for later calculations, this veda polygon is not paired with any ref poly
-                logging.warning(f'NO MATCHES FOUND FOR VEDA_POLYGON AT INDEX: {veda_polygons["index"].iloc[veda_poly_i]}; UNABLE TO FIND BEST DATE MATCHES, ATTACHING NONE FOR REFERENCE INDEX')
+                # for later calculations, this feds polygon is not paired with any ref poly
+                logging.warning(f'NO MATCHES FOUND FOR FEDS_POLYGON AT INDEX: {feds_polygons["index"].iloc[feds_poly_i]}; UNABLE TO FIND BEST DATE MATCHES, ATTACHING NONE FOR REFERENCE INDEX')
                
-                matches.append((veda_polygons['index'].iloc[veda_poly_i], None))
+                matches.append((feds_polygons['index'].iloc[feds_poly_i], None))
                 continue
             
             
-            timestamp = curr_veda_poly.t # veda time stamp - 2023-09-22T12:00:00 in str format 
+            timestamp = curr_feds_poly.t # feds time stamp - 2023-09-22T12:00:00 in str format 
             set_up_finds = ref_polygons.take(curr_finds)
                                  
             # PHASE 2: GET BEST TIME STAMP SET, TEST IF INTERSECTIONS FIT THIS BEST DATE
@@ -309,8 +309,8 @@ class OutputCalculation():
                 time_matches = OutputCalculation.get_nearest_by_date(set_up_finds, timestamp, self._day_search_range)
             except Exception as e:
                 logging.warning(f'Encountered error when running get_nearest_by_date: {e}')
-                logging.warning(f'DUE TO ERR: VEDA POLY WITH INDEX {veda_polygons["index"].iloc[veda_poly_i]} HAS NO INTERSECTIONS AT BEST DATES:  ATTACHING NONE FOR REFERENCE INDEX')
-                matches.append((veda_polygons['index'].iloc[veda_poly_i], None))
+                logging.warning(f'DUE TO ERR: FEDS POLY WITH INDEX {feds_polygons["index"].iloc[feds_poly_i]} HAS NO INTERSECTIONS AT BEST DATES:  ATTACHING NONE FOR REFERENCE INDEX')
+                matches.append((feds_polygons['index'].iloc[feds_poly_i], None))
                 continue
             if time_matches is None:
                 logging.error(f'FAILED: No matching dates found even with provided day search range window: {self._day_search_range}, critical benchmarking failure.')
@@ -324,8 +324,8 @@ class OutputCalculation():
             # intersect_and_date = [time_matches.iloc[[indx]] for indx in range(time_matches.shape[0])]
             assert len(intersect_and_date) != 0, "FATAL: len 0 should not occur with the intersect + best date array"
             if len(intersect_and_date) > 1:
-                logging.warning(f'VEDA polygon at index {veda_polygons["index"].iloc[veda_poly_i]} has MULTIPLE qualifying polygons to compare against; will attach {len(intersect_and_date)} tuples for this index.')
-            [matches.append((veda_polygons['index'].iloc[veda_poly_i], a_match)) for a_match in intersect_and_date]
+                logging.warning(f'FEDS polygon at index {feds_polygons["index"].iloc[feds_poly_i]} has MULTIPLE qualifying polygons to compare against; will attach {len(intersect_and_date)} tuples for this index.')
+            [matches.append((feds_polygons['index'].iloc[feds_poly_i], a_match)) for a_match in intersect_and_date]
             
                                
         logging.info('Nearest Date matching complete!')
