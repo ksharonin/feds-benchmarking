@@ -20,7 +20,7 @@ FEDS-PEC is a specialized Python module designed for geospatial data analysis, s
 
 ### Why Use FEDS-PEC?
 
-FEDS-PEC eliminates the need for users to recreate/repeat solutions when conducting geospatial data evaluations. By leveraging this module, researchers and analysts can focus their efforts on dataset selection and analysis, rather than spending time implementing and testing software for comparisons and calculations.
+FEDS-PEC eliminates the need for users to recreate/repeat solutions when conducting geospatial data evaluations. By leveraging this module, researchers and analysts can quickly and efficiently compare the FEDS fireperimeter dataset against a reference data set of their choosing. Users can focus their efforts on dataset selection and analysis, rather than spending time implementing and testing software for comparisons and calculations.
 
 ### Who Can Benefit from FEDS-PEC?
 
@@ -44,7 +44,8 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 ### FEDS Input Settings
 - `title`: select predefined title sourced from the api, or choose `none` if using a custom local input
     - Implemented:
-        - `"firenrt"` 
+        - `"firenrt"`: VEDA api fire perimeter dataset
+            - See documentation here for full dataset details: https://nasa-impact.github.io/veda-docs/notebooks/tutorials/mapping-fires.html
     - Not implemented:
         - `"none"`
         - `"staging-stac"`
@@ -52,12 +53,14 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 
 - `collection`: if using a predefined api dataset, choose a corresponding collection, otherwise choose `none` if using a custom local input
     - Implemented:
-        - `"public.eis_fire_lf_perimeter_archive"` 
+        - Corresponding title: `"firenrt"`
+            - `"public.eis_fire_lf_perimeter_archive"`: corresponding collection of the api dataset `"firenrt"` 
     - Not implemented:
         - `"none"`
-        - `"public.eis_fire_lf_fireline_archive"`
-        - `"public.eis_fire_snapshot_fireline_nrt"`
-        - `"public.eis_fire_snapshot_perimeter_nrt"`
+        - Corresponding title: `"firenrt"`
+            - `"public.eis_fire_lf_fireline_archive"`
+            - `"public.eis_fire_snapshot_fireline_nrt"`
+            - `"public.eis_fire_snapshot_perimeter_nrt"`
 - `access_type`:
     - Implemented: 
         - `api`
@@ -70,7 +73,7 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 ### Reference Input Settings
 - `title`:
     - Implemented:
-        - `"nifc_interagency_history_local`
+        - `"nifc_interagency_history_local`: a static shp datset downloaded from (); 
     - Not implemented:
         - `"nifc_arcgis_current_incidents"`
         - `"nifc_arcgis_current_incidents_wfigs`
