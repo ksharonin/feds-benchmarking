@@ -30,7 +30,7 @@ FEDS-PEC is primarily aimed at users of the NASA Making Earth System Data Record
 
 To install and use FEDS-PEC, follow these steps:
 
-1. **Conda Environment Setup:** Run the `env-feds.sh` shell script to create the `env-feds` Conda environment.
+1. **Conda Environment Setup:** Run the `env-feds.sh` shell script to create the `env-feds` Conda environment. (NOTE: do not instantiate your conda enviornment in a git repository, you will crash the MAAP enviornment due to memory usage) 
 
 2. **Notebook Setup:** Edit or make a copy of the `BLANK_FEDS_Outline.ipynb` located in the `blank` directory.
 
@@ -54,28 +54,50 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 - `collection`: if using a predefined api dataset, choose a corresponding collection, otherwise choose `none` if using a custom local input
     - Implemented:
         - Corresponding title: `"firenrt"`
-            - `"public.eis_fire_lf_perimeter_archive"`: corresponding collection of the api dataset `"firenrt"` 
+            - `"public.eis_fire_lf_perimeter_archive"`: collection of historic fire perimeters
     - Not implemented:
         - `"none"`
         - Corresponding title: `"firenrt"`
-            - `"public.eis_fire_lf_fireline_archive"`
-            - `"public.eis_fire_snapshot_fireline_nrt"`
+            - `"public.eis_fire_lf_fireline_archive"`: collection of historic firelines [different from fire perimeters in what way?]
+            - `"public.eis_fire_snapshot_fireline_nrt"`: collection of real-time firelines
             - `"public.eis_fire_snapshot_perimeter_nrt"`
+            - `'public.eis_fire_lf_nfplist_nrt'`,
+            - `'public.eis_fire_lf_perimeter_nrt'`,
+            - `'public.eis_fire_lf_nfplist_archive'`,
+            - `'public.eis_fire_lf_newfirepix_archive'`,
+            - `'public.eis_fire_snapshot_newfirepix_nrt'`,
+            - `'public.eis_fire_lf_fireline_nrt'`,
 - `access_type`:
     - Implemented: 
-        - `api`
+        - `api`: the VEDA API is an open-source collection of datasets which includes the FEDS fire perimeter dataset. Select this option for the following titles:
+            - `"firenrt"`
+            - For more information, please see documentation here: https://nasa-impact.github.io/veda-docs/
     - Not implemented: 
-        - `local`
+        - `local`: Select this option for datasets manually uploaded by the user. This corresponds with the title `"none"`
+        - 
 - `limit`: amount of features to consider for FEDS API access; warning appears if it misses any entries; set to `0` for non-api `none` datasets 
 - `filter`: `False` or a valid query that compiles with data set e.g. `"farea>5 AND duration>2"`; invalid queries will result in error
 - `apply_final_fire`: for `"firenrt`"  set this to `True` if you want the only the latest fireID to be taken per unique FireID, set `False` for other datasets 
 
 ### Reference Input Settings
+
+[We need detailed explanations for each input option, and what they mean. For each input: - Where is it coming from, who generated it, what time period does it cover, what spatial range, and what level is the code able to handle it?]
+
 - `title`:
     - Implemented:
-        - `"nifc_interagency_history_local`: a static shp datset downloaded from (); 
+        - `"nifc_interagency_history_local`: a static shp datset containing all fire perimeters up to 2021 documented by the National Interagency Fire Center (NIFC) for the United States
+            - Agency: National Interagency Fire Center (NIFC)
+            - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::interagencyfireperimeterhistory-all-years-view/explore?location=32.468087%2C-122.087025%2C3.89 
+            - Update frequency: downloaded to maap directory once by author
+            - Time period covered: 
+            - Geospatial coverage: United States
     - Not implemented:
-        - `"nifc_arcgis_current_incidents"`
+        - `"nifc_arcgis_current_incidents"`: a dynamic shp dataset containing current wildfire perimeters documented by  by the National Interagency Fire Center (NIFC) for the United States; program activately queries the ArcGIS online source
+            - Agency: National Interagency Fire Center (NIFC)
+            - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::wfigs-current-interagency-fire-perimeters/explore?location=0.000000%2C0.000000%2C2.48 
+            - Update frequency:
+            - Time period covered: 
+            - Geospatial coverage: United States
         - `"nifc_arcgis_current_incidents_wfigs`
         - `"nifc_arcgis_2023_latest"`
 - `control_type`:
