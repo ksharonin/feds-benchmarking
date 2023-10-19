@@ -24,7 +24,7 @@ FEDS-PEC eliminates the need for users to recreate/repeat solutions when conduct
 
 ### Who Can Benefit from FEDS-PEC?
 
-FEDS-PEC is primarily aimed at users of the NASA Making Earth System Data Records for Use in Research Environments (MAAP) platform and the broader Earth science research community.
+FEDS-PEC is primarily aimed at users of the NASA Multi-Algorithm and Analysis Platform (MAAP) platform and the broader Earth science research community.
 
 ## Installation Instructions
 
@@ -46,6 +46,7 @@ This section describes inputs for FEDS and reference datasets and acceptable val
     - Implemented:
         - `"firenrt"`: VEDA api fire perimeter dataset
             - See documentation here for full dataset details: https://nasa-impact.github.io/veda-docs/notebooks/tutorials/mapping-fires.html
+            - Sept 30th
     - Not implemented:
         - `"none"`
         - `"staging-stac"`
@@ -59,10 +60,11 @@ This section describes inputs for FEDS and reference datasets and acceptable val
         - `"none"`
         - Corresponding title: `"firenrt"`
             - `"public.eis_fire_lf_fireline_archive"`: collection of historic firelines [different from fire perimeters in what way?]
-            - `"public.eis_fire_snapshot_fireline_nrt"`: collection of real-time firelines
+            - `"public.eis_fire_snapshot_fireline_nrt"`: collection of real-time firelines; snapshots are a datastructure that includes smaller fires and a time parameter that represents most recent perimeter circa-given time; time is harder to interpret 
+                - Disclaimer: holds perimeters and may repeat calculations
             - `"public.eis_fire_snapshot_perimeter_nrt"`
             - `'public.eis_fire_lf_nfplist_nrt'`,
-            - `'public.eis_fire_lf_perimeter_nrt'`,
+            - `'public.eis_fire_lf_perimeter_nrt'`: best dataset for time-based queries lf == large fire
             - `'public.eis_fire_lf_nfplist_archive'`,
             - `'public.eis_fire_lf_newfirepix_archive'`,
             - `'public.eis_fire_snapshot_newfirepix_nrt'`,
@@ -89,7 +91,7 @@ This section describes inputs for FEDS and reference datasets and acceptable val
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::interagencyfireperimeterhistory-all-years-view/explore?location=32.468087%2C-122.087025%2C3.89 
             - Update frequency: downloaded to maap directory once by author
-            - Time period covered: 
+            - Time period covered: 1909 - 2021
             - Geospatial coverage: United States
     - Not implemented:
         - `"nifc_arcgis_current_incidents"`: a dynamic shp dataset containing current wildfire perimeters documented by  by the National Interagency Fire Center (NIFC) for the United States; program activately queries the ArcGIS online source
