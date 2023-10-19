@@ -94,7 +94,7 @@ This section describes inputs for FEDS and reference datasets and acceptable val
             - Time period covered: 1909 - 2021
             - Geospatial coverage: United States
     - Not implemented:
-        - `"nifc_arcgis_current_incidents"`: a dynamic shp dataset containing current wildfire perimeters documented by  by the National Interagency Fire Center (NIFC) for the United States; program activately queries the ArcGIS online source
+        - `"WFIGS_current_interagency_fire_perimeters"`: a dynamic shp dataset containing current wildfire perimeters documented by  by the National Interagency Fire Center (NIFC) for the United States; program activately queries the ArcGIS online source
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::wfigs-current-interagency-fire-perimeters/explore?location=0.000000%2C0.000000%2C2.48 
             - Update frequency:

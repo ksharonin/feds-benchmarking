@@ -6,6 +6,7 @@ Input_Reference Class
 import glob
 import sys
 import logging
+import requests
 import pandas as pd
 import geopandas as gpd
 from pyproj import CRS
@@ -26,9 +27,7 @@ class InputReference():
     
     # AGENCY - these map to specific read types
     REFERENCE_PREDEFINED_SETS = ["nifc_interagency_history_local", 
-                                 "nifc_arcgis_current_incidents",
-                                 "nifc_arcgis_current_incidents_wfigs",
-                                 "nifc_arcgis_2023_latest",
+                                 "WFIGS_current_interagency_fire_perimeters",
                                  "calfire_arcgis_historic",  
                                  "none"]
     # CONTROL - custom will need to provide their own read types
@@ -37,9 +36,8 @@ class InputReference():
     # PREDEFINED AGENCY URLS - map mul dict entries?
     URL_MAPS = { 
             "nifc_interagency_history_local": ["/projects/shared-buckets/ksharonin/InterAgencyFirePerimeterHistory", "shp_local"],
-             "nifc_arcgis_current_incidents": "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer",
-            "nifc_arcgis_current_incidents_wfigs" : "https://data-nifc.opendata.arcgis.com/datasets/nifc::wfigs-current-interagency-fire-perimeters/explore?location=-0.000000%2C0.000000%2C2.51",
-            "nifc_arcgis_2023_latest" : "https://data-nifc.opendata.arcgis.com/maps/2023-wildland-fire-incident-locations-to-date",
+            "WFIGS_current_interagency_fire_perimeters" : ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson" , "arc_gis_online"],
+            "current_wildland_fire_incident_locations" :[ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
             "calfire_arcgis_historic": "https://calfire-forestry.maps.arcgis.com/apps/mapviewer/index.html?layers=e3802d2abf8741a187e73a9db49d68fe"
             }
     
@@ -171,13 +169,36 @@ class InputReference():
         
         return self
     
+    def __set_polygon_arcgis_online(self):
+        """ given geojson url, save locally as shp file into the data dir of the repo 
+            set polygon attribute
+        """
+        
+        # relative path to data dir
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        data_dir = os.path.join(script_dir, "data")
+        location = os.path.join(data_directory, f"{self._title}.geojson")
+        
+        geojson_url = self._ds_url
+        response = requests.get(geojson_url)
+        if response.status_code == 200:
+            with open(location, "wb") as geojson_file:
+                geojson_file.write(response.content)
+            logging.info(f"GeoJSON data downloaded and saved to {location}")
+        else:
+            logging.error(f"Failed to retrieve data. Status code: {response.status_code}")
+            sys.exit()
+        
+        gdf = gpd.read_file(geojson_file)
+        self._polygons = gdf
+    
+        return self
+    
     # TODO
     def __set_polygon_set_raster_local(self):
         return self
     
-    def __set_polygon_arcgis_online(self):
-        return self
-    
+    # TODO
     def __set_polygon_s3(self):
         return self
     
