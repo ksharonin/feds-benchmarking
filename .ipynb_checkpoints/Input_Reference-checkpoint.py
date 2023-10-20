@@ -3,6 +3,7 @@ Input_Reference Class
 
 """
 
+import os
 import glob
 import sys
 import logging
@@ -156,8 +157,8 @@ class InputReference():
         # filter based on predfined conds 
         if self._title == "nifc_interagency_history_local":
             df = self.filter_nifc_interagency_history_local(df)
-        elif self._title == "":
-            print("TODO: finish set polygon local")
+        elif self._title == "WFIGS_current_interagency_fire_perimeters":
+            df = self.filter_WFIGS_current_interagency_fire_perimeters(df)
             sys.exit()
         elif self._title == "":
             print("TODO: finish set polygon local")
@@ -177,7 +178,7 @@ class InputReference():
         # relative path to data dir
         script_dir = os.path.dirname(os.path.abspath(__file__))
         data_dir = os.path.join(script_dir, "data")
-        location = os.path.join(data_directory, f"{self._title}.geojson")
+        location = os.path.join(data_dir, f"{self._title}.geojson")
         
         geojson_url = self._ds_url
         response = requests.get(geojson_url)
@@ -189,7 +190,7 @@ class InputReference():
             logging.error(f"Failed to retrieve data. Status code: {response.status_code}")
             sys.exit()
         
-        gdf = gpd.read_file(geojson_file)
+        gdf = gpd.read_file(location)
         self._polygons = gdf
     
         return self
@@ -236,7 +237,7 @@ class InputReference():
         df = df.set_crs(self._crs, allow_override=True)
         df = df[df.FIRE_YEAR == str(df_year)]
         if df.shape[0] == 0:
-            assert 1 == 0, "No possible"
+            assert 1 == 0, "Not possible"
             sys.exit()
         
         df['DATE_NOT_NONE'] = df.apply(lambda row : getattr(row, 'DATE_CUR') is not None, axis = 1)
@@ -248,10 +249,25 @@ class InputReference():
         
         return df
     
-    # TODO
-    def filter_nifc_arcgis_current_incidents(self, df):
+    def filter_WFIGS_current_interagency_fire_perimeters(self, df):
+        """ predefined filter for the WFIGS_current_interagency_fire_perimeters set
+            - generate 'DATE_CUR_STAMP' col
+            - set crs
+            - remove none dates
+        
+        """
+        
+        df_date = datetime.fromisoformat(self._usr_start)
+        df_year = df_date.year
+        df = df.set_crs(self._crs, allow_override=True)
+        
+        df['DATE_NOT_NONE'] = df.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
+        df = df[df.DATE_NOT_NONE == True]
+        df['DATE_CUR_STAMP'] =  df.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
+        
         return df
     
+    # TODO
     def filter_calfire_arcgis_historic(self, df):
         return df
     

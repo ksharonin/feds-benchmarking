@@ -184,8 +184,12 @@ class InputFEDS():
             
         df = gpd.GeoDataFrame.from_features(perm_results["features"])
         df['index'] = df.index
-        # given crs set by user --> do to_crs
+        
+        # set/to crs based on usr input
+        print(f'VERBOSE FEDS: passed self crs: {self._crs}')
         df = df.set_crs(self._crs)
+        # if df.crs != self._crs:
+            # df = df.to_crs(self._crs)
         
         # apply finalized fire perim: take highest indices of duplicate fire ids
         if self._title == "firenrt" and self._apply_finalfire:
