@@ -308,7 +308,7 @@ class OutputCalculation():
                 timestamp = datetime.strptime(timestamp.values[0], "%Y-%m-%dT%H:%M:%S")
                 time_matches = OutputCalculation.get_nearest_by_date(set_up_finds, timestamp, self._day_search_range)
             except Exception as e:
-                logging.warning(f'Encountered error when running get_nearest_by_date: {e}')
+                logging.error(f'Encountered error when running get_nearest_by_date: {e}')
                 logging.warning(f'DUE TO ERR: FEDS POLY WITH INDEX {feds_polygons["index"].iloc[feds_poly_i]} HAS NO INTERSECTIONS AT BEST DATES:  ATTACHING NONE FOR REFERENCE INDEX')
                 matches.append((feds_polygons['index'].iloc[feds_poly_i], None))
                 continue

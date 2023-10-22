@@ -13,8 +13,8 @@ import geopandas as gpd
 from pyproj import CRS
 from owslib.ogcapi.features import Features
 import geopandas as gpd
-import datetime as dt
-from datetime import datetime, timedelta
+import datetime
+from datetime import timedelta
 from functools import singledispatch
 
 pd.set_option('display.max_columns',None)
@@ -159,7 +159,6 @@ class InputReference():
             df = self.filter_nifc_interagency_history_local(df)
         elif self._title == "WFIGS_current_interagency_fire_perimeters":
             df = self.filter_WFIGS_current_interagency_fire_perimeters(df)
-            sys.exit()
         elif self._title == "":
             print("TODO: finish set polygon local")
             sys.exit()
@@ -191,6 +190,20 @@ class InputReference():
             sys.exit()
         
         gdf = gpd.read_file(location)
+        
+        # manually move filtering due to bug
+        df_date = datetime.datetime.fromisoformat(self._usr_start)
+        df_year = df_date.year
+        df = gdf.set_crs(self._crs, allow_override=True)
+        df = gdf.to_crs(self._crs)
+        
+        gdf = gdf[gdf.geometry != None]
+        gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
+        gdf = gdf[gdf.DATE_NOT_NONE == True]
+        gdf = gdf.dropna(subset=['poly_PolygonDateTime'])
+        gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
+        gdf['index'] = gdf.index
+        
         self._polygons = gdf
     
         return self
@@ -247,6 +260,7 @@ class InputReference():
         df['DATE_CUR_STAMP'] =  df.apply(lambda row : datetime.strptime(getattr(row, 'DATE_CUR'), nifc_date_format), axis = 1)
         df['index'] = df.index
         
+        
         return df
     
     def filter_WFIGS_current_interagency_fire_perimeters(self, df):
@@ -264,6 +278,7 @@ class InputReference():
         df['DATE_NOT_NONE'] = df.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
         df = df[df.DATE_NOT_NONE == True]
         df['DATE_CUR_STAMP'] =  df.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
+        
         
         return df
     
