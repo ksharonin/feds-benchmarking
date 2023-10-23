@@ -55,16 +55,16 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 - `collection`: if using a predefined api dataset, choose a corresponding collection, otherwise choose `none` if using a custom local input
     - Implemented:
         - Corresponding title: `"firenrt"`
-            - `"public.eis_fire_lf_perimeter_archive"`: collection of historic fire perimeters
+            - `"public.eis_fire_lf_perimeter_archive"`: collection of historic large fire perimeters
+            - `'public.eis_fire_lf_perimeter_nrt'`: collection of near-real time large fire perimeters
     - Not implemented:
         - `"none"`
         - Corresponding title: `"firenrt"`
-            - `"public.eis_fire_lf_fireline_archive"`: collection of historic firelines [different from fire perimeters in what way?]
-            - `"public.eis_fire_snapshot_fireline_nrt"`: collection of real-time firelines; snapshots are a datastructure that includes smaller fires and a time parameter that represents most recent perimeter circa-given time; time is harder to interpret 
+            - `"public.eis_fire_lf_fireline_archive"`: collection of historic firelines which are line geometry representing historic active fire fronts
+            - `"public.eis_fire_snapshot_fireline_nrt"`: collection of real-time firelines
                 - Disclaimer: holds perimeters and may repeat calculations
             - `"public.eis_fire_snapshot_perimeter_nrt"`
             - `'public.eis_fire_lf_nfplist_nrt'`,
-            - `'public.eis_fire_lf_perimeter_nrt'`: best dataset for time-based queries lf == large fire
             - `'public.eis_fire_lf_nfplist_archive'`,
             - `'public.eis_fire_lf_newfirepix_archive'`,
             - `'public.eis_fire_snapshot_newfirepix_nrt'`,
@@ -83,25 +83,23 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 
 ### Reference Input Settings
 
-[We need detailed explanations for each input option, and what they mean. For each input: - Where is it coming from, who generated it, what time period does it cover, what spatial range, and what level is the code able to handle it?]
-
 - `title`:
     - Implemented:
         - `"nifc_interagency_history_local`: a static shp datset containing all fire perimeters up to 2021 documented by the National Interagency Fire Center (NIFC) for the United States
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::interagencyfireperimeterhistory-all-years-view/explore?location=32.468087%2C-122.087025%2C3.89 
-            - Update frequency: downloaded to maap directory once by author
+            - Update frequency: one time/static, downloaded to maap directory once by author
             - Time period covered: 1909 - 2021
             - Geospatial coverage: United States
-    - Not implemented:
         - `"WFIGS_current_interagency_fire_perimeters"`: a dynamic shp dataset containing current wildfire perimeters documented by  by the National Interagency Fire Center (NIFC) for the United States; program activately queries the ArcGIS online source
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::wfigs-current-interagency-fire-perimeters/explore?location=0.000000%2C0.000000%2C2.48 
-            - Update frequency:
-            - Time period covered: 
+            - Update frequency: every 5 minutes
+            - Time period covered: Present
             - Geospatial coverage: United States
-        - `"nifc_arcgis_current_incidents_wfigs`
+    - Not implemented:
         - `"nifc_arcgis_2023_latest"`
+        - `"calfire_historic"`
 - `control_type`:
     - Implemented:
         - `"defined"`
@@ -129,7 +127,8 @@ Inputs shared between FEDS and Reference
 - `search bbox`: [top left longitude, top left latitude, bottom right longitude, bottom righ latitude]
 - `day_search_range`: x <= 7, used to search for matching reference polygons e.g. if x = 5 FEDS polygon finds an intersecting polygon, but it is 6 days difference in timestamp, it will not be included in the resulting output pairs.
 
-### Output Input Settings
+### Output Settings
+This section is likely to be removed in the future; users are expected to have plotting and downloading skills
 Define format of output and path, all used to construct `output_maap_url` 
 - `maap_username`: passed username to write into shared buckets
 - `name_for_output_file`: f"firenrt_vs_nifc_interagency_{year_start}_{search_bbox[0]}_{search_bbox[1]}_{search_bbox[2]}_{search_bbox[3]}"
@@ -150,7 +149,7 @@ Define format of output and path, all used to construct `output_maap_url`
 
 ## Example Usage
 
-For a comprehensive demonstration of how to use FEDS-PEC, refer to the ipynbs located in the `demos` directory, such as the `KINCADE_DEMO_FEDS_Outline.ipynb` notebook, which includes a demonstration using the Kincade Fire dataset.
+For a comprehensive demonstration of how to use FEDS-PEC, refer to the ipynbs located in the `demos` directory, such as the `KINCADE_DEMO_FEDS_Outline.ipynb` or `NRT_QUARRY_DEMO.ipynb` notebook, which includes a demonstration using the Kincade Fire dataset.
 
 ## Testing
 
@@ -175,6 +174,6 @@ We have plans to enhance FEDS-PEC with the following features:
 
 ## Contribution and Reporting Issues
 
-For contributions, support, feedback, or reporting issues, please contact Katrina Sharonin at ksharonin@berkeley.edu or katrina.sharonin@nasa.gov.
+For contributions, support, feedback, or reporting issues, please contact Katrina Sharonin at katrina.sharonin@nasa.gov.
 
 Thank you for using FEDS-PEC to streamline your geospatial data evaluations and comparisons. We welcome your feedback and contributions to help make this module even more powerful and user-friendly.
