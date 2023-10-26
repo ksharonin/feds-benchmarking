@@ -55,20 +55,20 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 - `collection`: if using a predefined api dataset, choose a corresponding collection, otherwise choose `none` if using a custom local input
     - Implemented:
         - Corresponding title: `"firenrt"`
-            - `"public.eis_fire_lf_perimeter_archive"`: collection of historic large fire perimeters
-            - `'public.eis_fire_lf_perimeter_nrt'`: collection of near-real time large fire perimeters
+            - `"public.eis_fire_lf_perimeter_archive"`: Perimeter of cumulative fire-area, from fires over 5 km^2 in the Western United States. Every fire perimeter from 2018-2021.
+            - `'public.eis_fire_lf_perimeter_nrt'`: Perimeter of cumulative fire-area, from fires over 5 km^2. Every fire perimeter from current year to date.
     - Not implemented:
         - `"none"`
         - Corresponding title: `"firenrt"`
             - `"public.eis_fire_lf_fireline_archive"`: collection of historic firelines which are line geometry representing historic active fire fronts
-            - `"public.eis_fire_snapshot_fireline_nrt"`: collection of real-time firelines
+            - `"public.eis_fire_snapshot_fireline_nrt"`: Active fire line as estimated by new VIIRS detections. Most fire line from the last 20 days.
                 - Disclaimer: holds perimeters and may repeat calculations
-            - `"public.eis_fire_snapshot_perimeter_nrt"`
+            - `"public.eis_fire_snapshot_perimeter_nrt"`: Perimeter of cumulative fire-area. Most recent perimeter from the last 20 days
             - `'public.eis_fire_lf_nfplist_nrt'`,
             - `'public.eis_fire_lf_nfplist_archive'`,
-            - `'public.eis_fire_lf_newfirepix_archive'`,
-            - `'public.eis_fire_snapshot_newfirepix_nrt'`,
-            - `'public.eis_fire_lf_fireline_nrt'`,
+            - `'public.eis_fire_lf_newfirepix_archive'`: New pixel detections that inform a given time-step’s perimeter and fireline calculation. Availible for Western United States from 2018-2021.
+            - `'public.eis_fire_snapshot_newfirepix_nrt'`: New pixel detections that inform a given time-step’s perimeter and fireline calculation. Availible from start of current year to date.
+            - `'public.eis_fire_lf_fireline_nrt'`: Active fire line as estimated by new VIIRS detections, from fires over 5 km^2. Every fire line from current year to date.
 - `access_type`:
     - Implemented: 
         - `api`: the VEDA API is an open-source collection of datasets which includes the FEDS fire perimeter dataset. Select this option for the following titles:
