@@ -97,9 +97,14 @@ This section describes inputs for FEDS and reference datasets and acceptable val
             - Update frequency: every 5 minutes
             - Time period covered: Present
             - Geospatial coverage: United States
+        - `"california_fire_perimeters_all"`
+            - Agency: California Department of Forestry and Protection (CAL FIRE)
+            - Source: https://hub-calfire-forestry.hub.arcgis.com/datasets/CALFIRE-Forestry::california-fire-perimeters-all-1/explore?location=37.471701%2C-119.269132%2C6.65
+            - Update frequency: 
+            - Time period covered: 1878-Present
+            - Geospatial coverage: California
     - Not implemented:
-        - `"nifc_arcgis_2023_latest"`
-        - `"calfire_historic"`
+        - `""`
 - `control_type`:
     - Implemented:
         - `"defined"`

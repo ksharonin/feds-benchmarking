@@ -187,7 +187,10 @@ class InputFEDS():
         
         # set/to crs based on usr input
         # print(f'VERBOSE FEDS: passed self crs: {self._crs}')
-        df = df.set_crs(self._crs)
+        try:
+            df = df.set_crs(self._crs)
+        except Exception as e:
+            logging.error(f'Encountered {e}, no FEDS geom found. Retry with different dates / region')
         df = df.to_crs(self._crs)
         # print(f'VERBOSE SET FEDS: {df.crs}')
         

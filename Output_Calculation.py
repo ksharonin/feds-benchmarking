@@ -324,8 +324,8 @@ class OutputCalculation():
             # intersect_and_date = [time_matches.iloc[[indx]] for indx in range(time_matches.shape[0])]
             assert len(intersect_and_date) != 0, "FATAL: len 0 should not occur with the intersect + best date array"
             if len(intersect_and_date) > 1:
-                logging.warning(f'FEDS polygon at index {feds_polygons["index"].iloc[feds_poly_i]} has MULTIPLE qualifying polygons to compare against; will attach {len(intersect_and_date)} tuples for this index.')
-            [matches.append((feds_polygons['index'].iloc[feds_poly_i], a_match)) for a_match in intersect_and_date]
+                logging.warning(f'FEDS polygon at index {feds_polygons["index"].iloc[feds_poly_i]} has MULTIPLE qualifying polygons to compare against: {len(intersect_and_date)} resulted. Select first polygon only; SUBJECT TO CHANGE!')
+            [matches.append((feds_polygons['index'].iloc[feds_poly_i], a_match)) for a_match in intersect_and_date[0:1]]
             
                                
         logging.info('Nearest Date matching complete!')

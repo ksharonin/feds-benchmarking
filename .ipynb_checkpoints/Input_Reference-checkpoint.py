@@ -29,7 +29,7 @@ class InputReference():
     # AGENCY - these map to specific read types
     REFERENCE_PREDEFINED_SETS = ["nifc_interagency_history_local", 
                                  "WFIGS_current_interagency_fire_perimeters",
-                                 "calfire_arcgis_historic",  
+                                 "california_fire_perimeters_all",  
                                  "none"]
     # CONTROL - custom will need to provide their own read types
     CONTROL_TYPE = ["defined", "custom"]
@@ -39,7 +39,7 @@ class InputReference():
             "nifc_interagency_history_local": ["/projects/shared-buckets/ksharonin/InterAgencyFirePerimeterHistory", "shp_local"],
             "WFIGS_current_interagency_fire_perimeters" : ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson" , "arc_gis_online"],
             "current_wildland_fire_incident_locations" :[ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
-            "calfire_arcgis_historic": "https://calfire-forestry.maps.arcgis.com/apps/mapviewer/index.html?layers=e3802d2abf8741a187e73a9db49d68fe"
+            "california_fire_perimeters_all": [ "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Fire_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"]
             }
     
     # instance initiation
@@ -159,6 +159,8 @@ class InputReference():
             df = self.filter_nifc_interagency_history_local(df)
         elif self._title == "WFIGS_current_interagency_fire_perimeters":
             df = self.filter_WFIGS_current_interagency_fire_perimeters(df)
+        elif self._title == "california_fire_perimeters_all":
+            df = self.filter_california_fire_perimeters_all(df)
         elif self._title == "":
             print("TODO: finish set polygon local")
             sys.exit()
@@ -197,11 +199,21 @@ class InputReference():
         df = gdf.set_crs(self._crs, allow_override=True)
         df = gdf.to_crs(self._crs)
         
-        gdf = gdf[gdf.geometry != None]
-        gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
-        gdf = gdf[gdf.DATE_NOT_NONE == True]
-        gdf = gdf.dropna(subset=['poly_PolygonDateTime'])
-        gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
+        # condition based on custom time col
+        # TODO: improve handling by making a special dict mapping for arcgis cases
+        if self._title == "WFIGS_current_interagency_fire_perimeters":
+            gdf = gdf[gdf.geometry != None]
+            gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
+            gdf = gdf[gdf.DATE_NOT_NONE == True]
+            gdf = gdf.dropna(subset=['poly_PolygonDateTime'])
+            gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
+        
+        elif self._title == "california_fire_perimeters_all":
+            gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'ALARM_DATE') is not None, axis = 1)
+            gdf = gdf[gdf.DATE_NOT_NONE == True]
+            gdf = gdf.dropna(subset=['ALARM_DATE'])
+            gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'ALARM_DATE') / 1000.0), axis = 1)
+        
         gdf['index'] = gdf.index
         
         self._polygons = gdf
@@ -283,7 +295,7 @@ class InputReference():
         return df
     
     # TODO
-    def filter_calfire_arcgis_historic(self, df):
+    def filter_california_fire_perimeters_all(self, df):
         return df
     
     
