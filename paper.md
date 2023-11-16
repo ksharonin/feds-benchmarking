@@ -10,13 +10,19 @@ authors:
     orcid: 0000-0000-0000-0000
     equal-contrib: true
     affiliation: 1
-  - name: Tempest Mccabe
-    equal-contrib: true # (This is how you can denote equal contributions between multiple 
-    authors)
-    affiliation: 1
+  - name: Author Without ORCID
+    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 2
+  - name: Author with no affiliation
+    corresponding: true # (This is how to denote the corresponding author)
+    affiliation: 3
 affiliations:
  - name: NASA Goddard Space and Flight Center
    index: 1
+ - name: Institution Name, Country
+   index: 2
+ - name: Independent Researcher, Country
+   index: 3
 date: 16 November 2023
 bibliography: paper.bib
 
@@ -52,10 +58,26 @@ However, the integration of satellite observations has been limited due to the v
 
 Despite various challenges, emerging research and products continue to improve and demonstrate the strength of satellite imagery for wildfire applications. To demonstrate the robustness of satellite perimeter products, there is a need to numerically compare satellite products with current agency mapping methods. By directly overlaying sources, both researchers and firefighting agencies can objectively assess and visualize performance. Most researchers generate their own scripts to perform these calculations. FEDS-PEC, originally created for the FEDS algorithm, is designed to reduce redundancy and provide researchers with a quick-start toolkit to compare fire perimeter datasets.
 
-# State of the field
+# Statement of the Field
 
-FEDS-PEC is targeted towards MAAP and FEDS for NASA research, but can also be used for external research for custom user inputs and datasets. In addition, included DEMO jupyter notebooks highlight how to interact with the library and walkthrough the classes. 
+FEDS-PEC is targeted towards MAAP and FEDS for NASA research, but can also be used for external research for custom user inputs and datasets. In addition, included DEMO jupyter notebooks highlight how to interact with the library and walkthrough the classes.
 
+# Mathematics
+
+Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
+
+Double dollars make self-standing equations:
+
+$$\Theta(x) = \left\{\begin{array}{l}
+0\textrm{ if } x < 0\cr
+1\textrm{ else}
+\end{array}\right.$$
+
+You can also use plain \LaTeX for equations
+\begin{equation}\label{eq:fourier}
+\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
+\end{equation}
+and refer to \autoref{eq:fourier} from text.
 
 # Citations
 
