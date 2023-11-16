@@ -10,19 +10,13 @@ authors:
     orcid: 0000-0000-0000-0000
     equal-contrib: true
     affiliation: 1
-  - name: Author Without ORCID
-    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
-    affiliation: 2
-  - name: Author with no affiliation
-    corresponding: true # (This is how to denote the corresponding author)
-    affiliation: 3
+  - name: Tempest Mccabe
+    equal-contrib: true # (This is how you can denote equal contributions between multiple 
+    authors)
+    affiliation: 1
 affiliations:
  - name: NASA Goddard Space and Flight Center
    index: 1
- - name: Institution Name, Country
-   index: 2
- - name: Independent Researcher, Country
-   index: 3
 date: 16 November 2023
 bibliography: paper.bib
 
@@ -34,56 +28,34 @@ aas-journal: Astrophysical Journal <- The name of the AAS journal.
 
 # Summary
 
-The forces on stars, galaxies, and dark matter under external gravitational
-fields lead to the dynamical evolution of structures in the universe. The orbits
-of these bodies are therefore key to understanding the formation, history, and
-future state of galaxies. The field of "galactic dynamics," which aims to model
-the gravitating components of galaxies to study their structure and evolution,
-is now well-established, commonly taught, and frequently used in astronomy.
-Aside from toy problems and demonstrations, the majority of problems require
-efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration).
+The Fire Event Data Suite-Polygon Evaluation and Comparison (FEDS-PEC) is a specialized Python library tailored to accelerate numerical comparison of variable fire perimeters mapping methods. The library is catered to run on the NASA Multi-Algorithm and Analysis Platform (MAAP) and to compare user-selected polygons against fire perimeters from key stakeholder agencies (NIFC, CALFIRE, and WFIGS). The library specializes in comparing NASA’s FEDS fire perimeter product with agency datasets to generate long-term performance assessment and assist NASA researchers in identifying areas of needed improvement in the FEDS algorithm. Although specialized for FEDS, users can freely adapt the library for custom inputs, enabling custom wildfire research.
 
-The Fire Event Data Suite - Polygon Evaluation and Comparison (FEDS-PEC) is a Python library designed to facilitate benchmarking and evaluation of geospatial data, specifically tailored for FEDS fire perimeters. This module allows users to compare these fire perimeters with reference datasets and perform various calculations, including ratio, accuracy, precision, recall, IOU (Intersection over Union), F1 score, and symmetric ratio. The primary goal of FEDS-PEC is to streamline the process of conducting such evaluations, saving time for researchers and analysts.
+FEDS-PEC’s core functionality enables seamless access and numerical analysis via simple user parameter settings and minimal code writing. Inputs include datasets of choice, region/bounding box, start time, end time, and day search range. The library visits the requested datasets, applies the region and search times, and performs diverse calculations including ratio, accuracy, precision, recall, IOU, F1 score, and symmetric ratio. Finally, FEDS-PEC returns the polygon metadata and corresponding calculations. Users can interact with the output by plotting the identified polygons and analyzing calculated values.
+
+Overall, FEDS-PEC optimizes evaluation processes, empowering researchers and analysts to efficiently assess perimeter geospatial data without reinventing evaluation solutions. Designed for compatibility with Jupyter Notebooks and offering flexible options, FEDS-PEC strives to bridge the gap between the wildfire research community and firefighting agencies by producing direct calculations and visualizations against various mapping methods.
+
 
 # Statement of need
 
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
-enables wrapping low-level languages (e.g., C) for speed without losing
-flexibility or ease-of-use in the user-interface. The API for `Gala` was
-designed to provide a class-based and user-friendly interface to fast (C or
-Cython-optimized) implementations of common operations such as gravitational
-potential and force evaluation, orbit integration, dynamical transformations,
-and chaos indicators for nonlinear dynamics. `Gala` also relies heavily on and
-interfaces well with the implementations of physical units and astronomical
-coordinate systems in the `Astropy` package [@astropy] (`astropy.units` and
-`astropy.coordinates`).
+Over the past two decades, wildfires in the Western U.S. have increased in severity, frequency, and size [Dennison et al, Weber et al]. Paired with the expansion of the wildland-urban interface [Readeloff et al, Hammer et al], estimated national wildfire damage costs on an annualized basis range from $63.5 billion to $285.0 billion [Thomas et al]. In addition, between 1901-2011, 674 civilian wildfire fatalities occurred in North America [Haynes et al USDA]. California wildfires have claimed 150 lives over the past 5 years alone [CAL FIRE top 20] and over 30% of total U.S. wildland firefighter fatalities from 1910-2010 [Haynes et al USDA].
 
-`Gala` was designed to be used by both astronomical researchers and by
-students in courses on gravitational dynamics or astronomy. It has already been
-used in a number of scientific publications [@Pearson:2017] and has also been
-used in graduate courses on Galactic dynamics to, e.g., provide interactive
-visualizations of textbook material [@Binney:2008]. The combination of speed,
-design, and support for Astropy functionality in `Gala` will enable exciting
-scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
+With the growing risk to property and livelihood in the U.S., precise and efficient methods of tracking active fire spread are critical for supporting near real-time firefighting response and wildfire management decision-making. Several map-making methods are practiced by firefighting agencies to track fire size and location. Primary methods include GPS-walking, GPS flight, and infrared image interpretation [NIFC 2022 Wildfire Perimeter Map Methods]. The latter method, infrared imaging (IR), is one of the most widely demanded due to daily data delivery for routine briefings and synoptic coverage; between 2013 and 2017, yearly IR requests for the USDA Forest Service’s National Infrared Operations Program (NIROPS) increased from about 1.4k to just over 3.0k [USFS NIROPS Poster]. However, aerial infrared imaging methods involve several acquisition challenges, including (A) cost, (B) sensor operation restrictions, (C) limited ability to meet coverage demand, and latency.
 
-# Mathematics
+Among NASA’s existing projects and tools, the development of thermal remote-sensing via satellites stands as a major potential augmentation to wildfire operations and mapping. The Moderate Resolution Imaging Spectroradiometer (MODIS) aboard the Aqua and Terra satellites, and the Visible Infrared Imaging Radiometer Suite (VIIRS) aboard S-NPP and NOAA 20 (formally known as JPSS-1), represent the primary tools for NASA’s wildfire remote-sensing initiatives. 
+Satellite observations are harnessed to generate finalized fire perimeter products. One leading perimeter algorithm is the Fire Event Data Suite Fire Perimeter Dataset (FEDS Fire Perimeters) led by Yang Chen et al. [TODO: describe FEDS algorithm which is sourced from VIIRS ]
 
-Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
+The integration of satellite products can address several issues faced by standard IR missions: satellites are not manned and therefore do not pose a safety risk when deployed, satellites do not impede in Fire Traffic Area (FTA), there is a standard temporal resolution for every instrument, tools can provide real-time data, data processing, interpretation, and access can be handled by programs such as NASA FIRMS, there is a fixed cost associated with only creation and maintenance of the satellite tool, and nationwide to global coverage potential.
 
-Double dollars make self-standing equations:
+However, the integration of satellite observations has been limited due to the various issues cited by USFS, including resolution scale (i.e. 2 km for MODIS), false positives, limited swath width, analysis support, latency, post-processing of data, and temporal resolution (6). Overall, USFS deems satellites most appropriate for strategic intelligence rather than tactical incident awareness and assessment (IAA), where IAA focuses on detailed intelligence on “fast moving dynamic fires” and strategic focuses on a wider operating picture (8):
 
-$$\Theta(x) = \left\{\begin{array}{l}
-0\textrm{ if } x < 0\cr
-1\textrm{ else}
-\end{array}\right.$$
+“Strategic Intelligence Mission Description: Maintain a Common Operating Picture to provide situational awareness of fires nationwide. [Technology:] Satellite IR data, fire perimeters, resources, etc. [Definition:] Inform strategic decisions (non-tactical). Prioritize response and resources. Satellite detection may be best [used] for nationwide coverage. Combine with additional data from other sources (i.e GEOMAC).”
 
-You can also use plain \LaTeX for equations
-\begin{equation}\label{eq:fourier}
-\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
-\end{equation}
-and refer to \autoref{eq:fourier} from text.
+Despite various challenges, emerging research and products continue to improve and demonstrate the strength of satellite imagery for wildfire applications. To demonstrate the robustness of satellite perimeter products, there is a need to numerically compare satellite products with current agency mapping methods. By directly overlaying sources, both researchers and firefighting agencies can objectively assess and visualize performance. Most researchers generate their own scripts to perform these calculations. FEDS-PEC, originally created for the FEDS algorithm, is designed to reduce redundancy and provide researchers with a quick-start toolkit to compare fire perimeter datasets.
+
+# State of the field:
+
+FEDS-PEC is targeted towards MAAP and FEDS for NASA research, but can also be used for external research for custom user inputs and datasets. In addition, included DEMO jupyter notebooks highlight how to interact with the library and walkthrough the classes. 
+
 
 # Citations
 
