@@ -52,7 +52,7 @@ However, the integration of satellite observations has been limited due to the v
 
 Despite various challenges, emerging research and products continue to improve and demonstrate the strength of satellite imagery for wildfire applications. To demonstrate the robustness of satellite perimeter products, there is a need to numerically compare satellite products with current agency mapping methods. By directly overlaying sources, both researchers and firefighting agencies can objectively assess and visualize performance. Most researchers generate their own scripts to perform these calculations. FEDS-PEC, originally created for the FEDS algorithm, is designed to reduce redundancy and provide researchers with a quick-start toolkit to compare fire perimeter datasets.
 
-# State of the field:
+# State of the field
 
 FEDS-PEC is targeted towards MAAP and FEDS for NASA research, but can also be used for external research for custom user inputs and datasets. In addition, included DEMO jupyter notebooks highlight how to interact with the library and walkthrough the classes. 
 
