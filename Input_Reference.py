@@ -202,6 +202,8 @@ class InputReference():
         # condition based on custom time col
         # TODO: improve handling by making a special dict mapping for arcgis cases
         if self._title == "WFIGS_current_interagency_fire_perimeters":
+            gdf['is_valid_geometry'] = gdf['geometry'].is_valid
+            gdf = gdf[gdf['is_valid_geometry'] == True]
             gdf = gdf[gdf.geometry != None]
             gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
             gdf = gdf[gdf.DATE_NOT_NONE == True]
@@ -209,6 +211,8 @@ class InputReference():
             gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
         
         elif self._title == "california_fire_perimeters_all":
+            gdf['is_valid_geometry'] = gdf['geometry'].is_valid
+            gdf = gdf[gdf['is_valid_geometry'] == True]
             gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'ALARM_DATE') is not None, axis = 1)
             gdf = gdf[gdf.DATE_NOT_NONE == True]
             gdf = gdf.dropna(subset=['ALARM_DATE'])
