@@ -1,5 +1,5 @@
 ---
-title: 'FEDS-PEC: A Python Library for Streamlining WildFire Perimeter Research'
+title: 'FEDS-PEC: A Python Module for Streamlining NASA Fire Perimeters Comparisons to Alternative Mapping Methods'
 tags:
   - Python
   - wildfire
@@ -34,9 +34,9 @@ aas-journal: Astrophysical Journal <- The name of the AAS journal.
 
 # Summary
 
-The Fire Event Data Suite-Polygon Evaluation and Comparison (FEDS-PEC) is a specialized Python library tailored to accelerate numerical comparison of variable fire perimeters mapping methods. The library is catered to run on the NASA Multi-Algorithm and Analysis Platform (MAAP) and to compare user-selected polygons against fire perimeters from key stakeholder agencies (NIFC, CALFIRE, and WFIGS). The library specializes in comparing NASA’s FEDS fire perimeter product with agency datasets to generate long-term performance assessment and assist NASA researchers in identifying areas of needed improvement in the FEDS algorithm. Although specialized for FEDS, users can freely adapt the library for custom inputs, enabling custom wildfire research.
+The Fire Event Data Suite-Polygon Evaluation and Comparison (FEDS-PEC) is a specialized Python library tailored to accelerate numerical comparison of variable fire perimeters mapping methods. The module is catered to run on the NASA Multi-Algorithm and Analysis Platform (MAAP) and to compare NASA’s FEDS fire perimeter product against fire perimeters from key stakeholder agencies (e.g. NIFC, CALFIRE, and WFIGS) along with user-inputted datasets. Ultimately FEDS-PEC is aimed at generating long-term performance assessments and assisting NASA researchers in identifying areas of needed improvement in the FEDS algorithm. Although specialized for FEDS, users can freely adapt the library for custom inputs, enabling custom wildfire research.
 
-FEDS-PEC’s core functionality enables seamless access and numerical analysis via simple user parameter settings and minimal code writing. Inputs include datasets of choice, region/bounding box, start time, end time, and day search range. The library visits the requested datasets, applies the region and search times, and performs diverse calculations including ratio, accuracy, precision, recall, IOU, F1 score, and symmetric ratio. Finally, FEDS-PEC returns the polygon metadata and corresponding calculations. Users can interact with the output by plotting the identified polygons and analyzing calculated values.
+FEDS-PEC’s core functionality enables seamless access and numerical analysis via simple user parameter settings and minimal code writing. Inputs include datasets of choice, region/bounding box, start time, end time, and day search range. The library visits the requested datasets, applies the region and search times, and performs diverse calculations including ratio, accuracy, precision, recall, IOU, F1 score, and symmetric ratio difference. Finally, FEDS-PEC returns the polygon metadata and corresponding calculations. Users can interact with the output by plotting the identified polygons and analyzing calculated values.
 
 Overall, FEDS-PEC optimizes evaluation processes, empowering researchers and analysts to efficiently assess perimeter geospatial data without reinventing evaluation solutions. Designed for compatibility with Jupyter Notebooks and offering flexible options, FEDS-PEC strives to bridge the gap between the wildfire research community and firefighting agencies by producing direct calculations and visualizations against various mapping methods.
 
@@ -56,14 +56,36 @@ However, the integration of satellite observations has been limited due to the v
 
 “Strategic Intelligence Mission Description: Maintain a Common Operating Picture to provide situational awareness of fires nationwide. [Technology:] Satellite IR data, fire perimeters, resources, etc. [Definition:] Inform strategic decisions (non-tactical). Prioritize response and resources. Satellite detection may be best [used] for nationwide coverage. Combine with additional data from other sources (i.e GEOMAC).”
 
-Despite various challenges, emerging research and products continue to improve and demonstrate the strength of satellite imagery for wildfire applications. To demonstrate the robustness of satellite perimeter products, there is a need to numerically compare satellite products with current agency mapping methods. By directly overlaying sources, both researchers and firefighting agencies can objectively assess and visualize performance. Most researchers generate their own scripts to perform these calculations. FEDS-PEC, originally created for the FEDS algorithm, is designed to reduce redundancy and provide researchers with a quick-start toolkit to compare fire perimeter datasets.
+Despite various challenges, emerging research and products continue to improve and demonstrate the strength of satellite imagery for wildfire applications. To demonstrate the robustness of satellite perimeter products, there is a need to numerically compare satellite products with current agency mapping methods. By directly overlaying sources, both researchers and firefighting agencies can objectively assess and visualize performance. Most researchers generate their own scripts to perform these calculations. FEDS-PEC is designed to reduce redundancy and provide researchers with a quick-start toolkit to compare fire perimeter datasets. By uplifting researcher efficiency, the scientific community can more effectively collaborate with firefighting/stakeholder agencies to identify strengths, weaknesses, and opportunities for improvement.
 
 # Statement of the Field
 
-FEDS-PEC is targeted towards MAAP and FEDS for NASA research, but can also be used for external research for custom user inputs and datasets. In addition, included DEMO jupyter notebooks highlight how to interact with the library and walkthrough the classes.
+As of December, 2023, no other open-source fire perimeter comparison library exists. FEDS-PEC is targeted towards MAAP and FEDS for NASA research, but can also be used for external research for custom user inputs and datasets. In addition, included DEMO jupyter notebooks highlight how to interact with the library and walkthrough the classes. 
 
-# Mathematics
+# FEDS-PEC Project
 
+## Overview
+
+FEDS-PEC requires user inputs of time interval, region, and dataset choices (start_time, end_time, feds_input_settings, reference_input_settings, day_search_range) to generate 3 objects: `InputFEDS`, `InputReference`, and `OutputCalculation`. 
+`InputFEDS` represents the FEDS perimeter input. `InputReference` represents the stakeholder dataset (e.g. NIFC archive polygon, CAL FIRE historic perimeter, etc). `OutputCalculation` is an object which stores the results of comparing `InputFEDS` and `InputReference`. It will generate verbose outputs that users can subsequently use to plot information. 
+
+
+## Key Features
+- TODO
+
+
+# Calculation Functions
+- Values
+$$x_{\text{FEDS}} \, (\text{Input\_FEDS polygon}) x$$
+
+- Helper Functions
+    - Intersect()
+    - Union()
+    - Difference()
+    - Envlope()
+    - Area()
+
+### Walkthrough Calculation Values 
 Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
 
 Double dollars make self-standing equations:
