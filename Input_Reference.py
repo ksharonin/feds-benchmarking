@@ -28,15 +28,18 @@ class InputReference():
     
     # AGENCY - these map to specific read types
     REFERENCE_PREDEFINED_SETS = ["nifc_interagency_history_local", 
+                                 "InterAgencyFirePerimeterHistory_All_Years_View",
                                  "WFIGS_current_interagency_fire_perimeters",
-                                 "california_fire_perimeters_all",  
+                                 "california_fire_perimeters_all",
+                                 "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View",
                                  "none"]
     # CONTROL - custom will need to provide their own read types
     CONTROL_TYPE = ["defined", "custom"]
     
     # PREDEFINED AGENCY URLS - map mul dict entries?
     URL_MAPS = { 
-            "nifc_interagency_history_local": ["/projects/shared-buckets/ksharonin/InterAgencyFirePerimeterHistory", "shp_local"],
+            "nifc_interagency_history_local": ["/projects/shared-buckets/ksharonin/Latest_Interagency_Fire_Perimeters", "shp_local"],
+        "WFIGS_Interagency_Fire_Perimeters": [ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
             "WFIGS_current_interagency_fire_perimeters" : ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson" , "arc_gis_online"],
             "current_wildland_fire_incident_locations" :[ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
             "california_fire_perimeters_all": [ "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Fire_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"]
@@ -218,6 +221,20 @@ class InputReference():
             gdf = gdf.dropna(subset=['ALARM_DATE'])
             gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'ALARM_DATE') / 1000.0), axis = 1)
         
+        elif self._title == "WFIGS_Interagency_Fire_Perimeters":
+            gdf['is_valid_geometry'] = gdf['geometry'].is_valid
+            gdf = gdf[gdf['is_valid_geometry'] == True]
+            # gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'DATE_CUR') is not None, axis = 1)
+            gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
+            gdf = gdf[gdf.DATE_NOT_NONE == True]
+            # cur_format = '%Y%m%d' 
+            # gdf['DATE_CUR_STAMP'] = gdf.apply(lambda row : datetime.strptime(row.DATE_CUR, cur_format), axis = 1)
+            gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
+            gdf = gdf.dropna(subset=['poly_PolygonDateTime'])
+            gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row : datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
+            # gdf = gdf.set_crs(self._crs, allow_override=True)
+            gdf = gdf.to_crs(self._crs)
+        
         gdf['index'] = gdf.index
         
         self._polygons = gdf
@@ -256,7 +273,7 @@ class InputReference():
         """
         
         # fetch dates
-        df_date = datetime.fromisoformat(self._usr_start)
+        df_date = datetime.datetime.fromisoformat(self._usr_start)
         df_year = df_date.year
         nifc_date_format = '%Y%m%d' 
         
@@ -273,7 +290,7 @@ class InputReference():
         df = df[df.DATE_NOT_NONE == True]
         df['DATE_LEN_VALID'] = df.apply(lambda row : len(getattr(row, 'DATE_CUR')) == 8 , axis = 1)
         df = df[df.DATE_LEN_VALID == True]
-        df['DATE_CUR_STAMP'] =  df.apply(lambda row : datetime.strptime(getattr(row, 'DATE_CUR'), nifc_date_format), axis = 1)
+        df['DATE_CUR_STAMP'] =  df.apply(lambda row : datetime.datetime.strptime(getattr(row, 'DATE_CUR'), nifc_date_format), axis = 1)
         df['index'] = df.index
         
         

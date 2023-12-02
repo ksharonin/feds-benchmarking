@@ -13,6 +13,8 @@ import boto3
 import geopandas as gpd
 import datetime as dt
 import logging
+import csv
+import matplotlib.pyplot as plt
 
 from pyproj import CRS
 from owslib.ogcapi.features import Features
@@ -31,7 +33,7 @@ class OutputCalculation():
     """
     
     # implemented output formats
-    OUTPUT_FORMATS = ["txt", "json"]
+    OUTPUT_FORMATS = ["csv"]
     
     def __init__(self, 
                  feds_input: InputFEDS, 
@@ -54,7 +56,7 @@ class OutputCalculation():
         # PROGRAM SET
         self._polygons = None
         self._calculations = None # set from running the calculation -> dict of lists? index syncrhonized?
-        self._dump = None # content to dump into file
+        # self._dump = None # content to dump into file
         self._s3_url = None # possibly delete?
         
         # SINGLE SETUP
@@ -85,16 +87,14 @@ class OutputCalculation():
         # run calculations
         self.__run_calculations() # --> internally finds best matches and runs on the best matches
         
-        # TODO
-        # self.__set_up_output_maap_file()
-        # self.__write_to_output_file()
-        
-        # TODO
         if self._print_on:
             self.__print_output()
         if self._plot_on:
             self.__plot_output()
-            
+          
+        # write to csv
+        self.write_to_csv()
+        
         return self
     
     def __set_up_valid_maap_url(self):
@@ -104,7 +104,6 @@ class OutputCalculation():
         s3_url = self._output_maap_url 
         
         try:
-            # try:
             s3 = boto3.client('s3')
             bucket, key, nested = Utilities.split_s3_path(s3_url)
 
@@ -213,11 +212,75 @@ class OutputCalculation():
                     skip_first_key = False
                     continue  # Skip the first key
                 vals.append(calculations[key][i])
-            print(f'CALCULATED A RESULT: POLYGON FEDS AT INDEX {calculations["index_pairs"][i][0]} AGAINST REFERENCE POLYGON AT INDEX {calculations["index_pairs"][i][1]}:')
-            print(f'Ratio: {vals[0]}, Accuracy: {vals[1]}, Precision: {vals[2]}, Recall: {vals[3]}, IOU: {vals[4]}, F1 {vals[5]}, Symmetric Ratio: {vals[6]}')
-            print(f'All measurements in units {self._feds_input.polygons.crs.axis_info[0].unit_name}')
-                                 
+            
+            # skip if none result, too verbose if all displayed
+            if all(value is None for value in vals):
+                print(f'NO CALCULATION RESULTS, SKIP FEDS INDEX {calculations["index_pairs"][i][0]} & REFERENCE INDEX {calculations["index_pairs"][i][0]}')
+            else: 
+                print(f'CALCULATED A RESULT: POLYGON FEDS AT INDEX {calculations["index_pairs"][i][0]} AGAINST REFERENCE POLYGON AT INDEX {calculations["index_pairs"][i][1]}:')
+                print(f'Ratio: {vals[0]}, Accuracy: {vals[1]}, Precision: {vals[2]}, Recall: {vals[3]}, IOU: {vals[4]}, F1 {vals[5]}, Symmetric Ratio: {vals[6]}')
+                print(f'All measurements in units {self._feds_input.polygons.crs.axis_info[0].unit_name}')
+
         return self
+    
+    def __plot_output(self):
+        """ generate plots for all successful (non-None) indices
+            include metadata relevant to project
+            
+            each match pair == separate plot image
+        """
+        print("\n")
+        print("PLOTTING ON: BEGIN PLOT OUTPUT")
+        
+        # fetch dict vals
+        calculations = self._calculations
+        
+        # poly + time fetch
+        feds_polygons = self._feds_input.polygons
+        ref_polygons = self._ref_input.polygons
+        
+        # TODO generate series of plots for all non-None results
+        for pair in calculations['index_pairs']:
+            # coresponding index
+            i = calculations['index_pairs'].index(pair)
+            # ignore none value results
+            if all( value is None for value in 
+                    [
+                        calculations['ratio'][i],
+                        calculations['accuracy'][i],
+                        calculations['precision'][i],
+                        calculations['recall'][i],
+                        calculations['iou'][i],
+                        calculations['f1'][i],
+                        calculations['symm_ratio'][i]
+                    ]
+                ):
+                    continue
+            
+            # poly + time extraction
+            feds_poly = feds_polygons[feds_polygons['index'] == calculations['index_pairs'][i][0]]
+            ref_poly = ref_polygons[ref_polygons['index'] == calculations['index_pairs'][i][1]]
+            feds_time = feds_poly.t.values[0]
+            ref_time = ref_poly['DATE_CUR_STAMP'].values[0]
+        
+            # apply indices
+            index1, index2 = pair
+            feds_poly = feds_polygons[feds_polygons['index'] == index1]
+            ref_poly = ref_polygons[ref_polygons['index'] == index2]
+
+            # new fig per pair
+            fig, ax = plt.subplots(figsize=(15, 15))
+            feds_poly.plot(ax=ax, legend=True, label="FEDS Fire Estimate", color="red",edgecolor="black", linewidth=0.5 )
+            ref_poly.plot(ax=ax, legend=True, label="NIFC Nearest Date + Intersection", color="gold", edgecolor="black", linewidth=0.5, alpha=0.7)
+            
+            # show plot
+            ax.set_title(f"FEDS at {feds_time} VS. Reference at {ref_time}")
+            ax.set_xlabel("Longitude")
+            ax.set_ylabel("Latitude")
+            plt.grid(True)
+            plt.show()
+        
+        print("PLOTTING COMPLETE")
     
     def __set_up_output_maap_file(self):
         """ with a valid maap-ops-workspace url (bucket + key) --> make an object in the bucket with prefix; rechecks access should any edge cases occur (e.g. aws going down/skipping)"""
@@ -232,8 +295,6 @@ class OutputCalculation():
         # )
                                  
         return self
-        
-    
                                  
     # GENERAL PROCESSING METHODS
                                  
@@ -331,15 +392,109 @@ class OutputCalculation():
         logging.info('Nearest Date matching complete!')
         return matches
     
-    def format_for_file(self):
-        # TODO
-        return 0
-    
-    def write_to_output_file(self):
-        # TODO
-        with fsspec.open(self._output_maap_url) as f:
-            f.write(self._dump)
+    def write_to_csv(self):
+        """ take result calculation columns and output into csv format
+            take note of instance vars:
+            
+            self._output_format = output_format
+            self._output_maap_url = output_maap_url
+            self._dump = None # content to dump into file
+            
+            wants cols for the feds index, reference index, then corresponding calcs
+            
+            e.g. for calculations = { 'index_pairs': index_pairs,
+                         'ratio': [],
+                         'accuracy': [],
+                         'precision': [],
+                         'recall': [],
+                         'iou': [],
+                         'f1': [],
+                         'symm_ratio': []
+                       }
+            row i = feds index: index_pairs[i][0], 
+                    ref index: index_pairs[i][1],
+                    ratio: ratio[i],
+                    etc.
+        
+        """
+        
+        # fetch dict 
+        calculations = self._calculations
+        # source length from top given all should be same len
+        file_name = self._output_maap_url
+        # fetch polygons to extract meta data
+        feds_polygons = self._feds_input.polygons
+        ref_polygons = self._ref_input.polygons
+        
+        with open(file_name, 'w', newline='') as csvfile:
+            # erase prev content 
+            csvfile.truncate()
+            
+            fieldnames = ['feds_index', 
+                          'ref_index', 
+                          'incident_name', # need to condition if available
+                          'feds_timestamp',
+                          'ref_timestamp',
+                          'ratio', 
+                          'accuracy', 
+                          'precision', 
+                          'recall', 
+                          'iou', 
+                          'f1', 
+                          'symm_ratio']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            num_rows = len(calculations['index_pairs']) 
 
+            for i in range(num_rows):
+                # skip None values for write in
+                if all( value is None for value in 
+                    [
+                        calculations['ratio'][i],
+                        calculations['accuracy'][i],
+                        calculations['precision'][i],
+                        calculations['recall'][i],
+                        calculations['iou'][i],
+                        calculations['f1'][i],
+                        calculations['symm_ratio'][i]
+                    ]
+                ):
+                    continue
+                    
+                else: 
+                    # poly extraction
+                    feds_poly = feds_polygons[feds_polygons['index'] == calculations['index_pairs'][i][0]]
+                    ref_poly = ref_polygons[ref_polygons['index'] == calculations['index_pairs'][i][1]]
+                    # timestamp extract
+                    feds_time = feds_poly.t.values[0]
+                    ref_time = ref_poly['DATE_CUR_STAMP'].values[0]
+                    
+                    # (if applicable) suspect incident name match
+                    if 'INCIDENT' in ref_poly.columns:
+                        incident_name = ref_poly['INCIDENT'].values[0]
+                    else:
+                        incident_name = ""
+                    
+                    row_data = {
+                        'feds_index': calculations['index_pairs'][i][0],
+                        'ref_index': calculations['index_pairs'][i][1],
+                        'incident_name': incident_name,
+                        'feds_timestamp': feds_time,
+                        'ref_timestamp': ref_time,
+                        'ratio': calculations['ratio'][i],
+                        'accuracy': calculations['accuracy'][i],
+                        'precision': calculations['precision'][i],
+                        'recall': calculations['recall'][i],
+                        'iou': calculations['iou'][i],
+                        'f1': calculations['f1'][i],
+                        'symm_ratio': calculations['symm_ratio'][i]
+                    }
+                    writer.writerow(row_data)
+        
+        print("\n")
+        print(f"CSV output complete! Check file {file_name} for results. NOTE: None result rows were excluded.")
+        
+        
     
     #### WARNING: EXPERIMENTAL METHODS BELOW, NOT CONFORMING TO OOP DESIGN ###   
         
