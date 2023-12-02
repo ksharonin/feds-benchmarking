@@ -16,6 +16,7 @@ import logging
 import csv
 import matplotlib.pyplot as plt
 
+from tqdm import tqdm
 from pyproj import CRS
 from owslib.ogcapi.features import Features
 from datetime import datetime, timedelta
@@ -339,8 +340,10 @@ class OutputCalculation():
         logging.info(f'Number of total feds_polygons: {len(self._feds_input.polygons.index)}')
         logging.info(f'Number of total ref_polygons: {len(self._ref_input.polygons.index)}')
         
+        total_iterations = feds_polygons.shape[0]
+        
         # iterate through all feds polys
-        for feds_poly_i in range(feds_polygons.shape[0]):
+        for feds_poly_i in tqdm(range(total_iterations), desc="Running FEDS-Reference Match Algorithm", unit="polygon"):
             # grab feds polygon
             curr_feds_poly = feds_polygons.iloc[[feds_poly_i]]
             # indices of refs that intersected with this feds poly
@@ -354,8 +357,7 @@ class OutputCalculation():
                     curr_finds.append(ref_poly_i)
            
             if len(curr_finds) == 0:
-                # for later calculations, this feds polygon is not paired with any ref poly
-                logging.warning(f'NO MATCHES FOUND FOR FEDS_POLYGON AT INDEX: {feds_polygons["index"].iloc[feds_poly_i]}; UNABLE TO FIND BEST DATE MATCHES, ATTACHING NONE FOR REFERENCE INDEX')
+                # logging.warning(f'NO MATCHES FOUND FOR FEDS_POLYGON AT INDEX: {feds_polygons["index"].iloc[feds_poly_i]}; UNABLE TO FIND BEST DATE MATCHES, ATTACHING NONE FOR REFERENCE INDEX')
                
                 matches.append((feds_polygons['index'].iloc[feds_poly_i], None))
                 continue
@@ -435,6 +437,7 @@ class OutputCalculation():
                           'incident_name', # need to condition if available
                           'feds_timestamp',
                           'ref_timestamp',
+                          # 'feds_minus_ref_timestamp',
                           'ratio', 
                           'accuracy', 
                           'precision', 
@@ -469,9 +472,15 @@ class OutputCalculation():
                     feds_time = feds_poly.t.values[0]
                     ref_time = ref_poly['DATE_CUR_STAMP'].values[0]
                     
+                    # t difference
+                    # feds_minus_ref_time = feds_time - ref_time
+                    # UFuncTypeError: ufunc 'subtract' cannot use operands with types dtype('<U19') and dtype('<M8[ns]')
+                    
                     # (if applicable) suspect incident name match
                     if 'INCIDENT' in ref_poly.columns:
                         incident_name = ref_poly['INCIDENT'].values[0]
+                    elif 'poly_IncidentName' in ref_poly.columns:
+                        incident_name = ref_poly['poly_IncidentName'].values[0]
                     else:
                         incident_name = ""
                     
@@ -481,6 +490,7 @@ class OutputCalculation():
                         'incident_name': incident_name,
                         'feds_timestamp': feds_time,
                         'ref_timestamp': ref_time,
+                        # 'feds_minus_ref_timestamp': feds_minus_ref_time,
                         'ratio': calculations['ratio'][i],
                         'accuracy': calculations['accuracy'][i],
                         'precision': calculations['precision'][i],
@@ -719,7 +729,7 @@ class OutputCalculation():
         FP = OutputCalculation.falsePos(feds_inst, nifc_inst) # feds + nifc agree on no burning
         FN = OutputCalculation.falseNeg(feds_inst, nifc_inst) # feds thinks unburned when nifc burned
 
-        return 0
+        return TP / (TP + FP + FN)
 
     def f1ScoreCalculation(feds_inst, nifc_inst):
         """ 2 * (Precision * Recall)/(Precision + Recall)

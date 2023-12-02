@@ -180,7 +180,8 @@ class InputFEDS():
             sys.exit()
         
         if not perm_results["numberMatched"] == perm_results["numberReturned"]:
-            logging.warning('INPUTFEDS: provided limit cuts out items of possible interest; consider upping limit') 
+            # logging.warning('INPUTFEDS: provided limit cuts out items of possible interest; consider upping limit') 
+            raise ValueError("INPUTFEDS: provided item limit on API cuts out items; increase limit and/or decrease time range to prevent corrupt results")
             
         df = gpd.GeoDataFrame.from_features(perm_results["features"])
         df['index'] = df.index
