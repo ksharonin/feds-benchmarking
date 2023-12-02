@@ -180,20 +180,20 @@ class InputFEDS():
             sys.exit()
         
         if not perm_results["numberMatched"] == perm_results["numberReturned"]:
-            # logging.warning('INPUTFEDS: provided limit cuts out items of possible interest; consider upping limit') 
             raise ValueError("INPUTFEDS: provided item limit on API cuts out items; increase limit and/or decrease time range to prevent corrupt results")
             
         df = gpd.GeoDataFrame.from_features(perm_results["features"])
+        if df.empty:
+            raise ValueError("INPUTFEDS: No FEDS results found. Please re-try with different date range/bbox region")
+        
         df['index'] = df.index
         
         # set/to crs based on usr input
-        # print(f'VERBOSE FEDS: passed self crs: {self._crs}')
         try:
             df = df.set_crs(self._crs)
         except Exception as e:
             logging.error(f'Encountered {e}, no FEDS geom found. Retry with different dates / region')
         df = df.to_crs(self._crs)
-        # print(f'VERBOSE SET FEDS: {df.crs}')
         
         # apply finalized fire perim: take highest indices of duplicate fire ids
         if self._title == "firenrt" and self._apply_finalfire:
@@ -205,14 +205,13 @@ class InputFEDS():
         return self
     
     
-    
-    # HARDCODED DATA ACCESS
-    # TODO
-    # @crs.setter
-    # @units.setter
-    def set_hard_dataset(self):
-        """ read data from passed url/location"""
+#     # HARDCODED DATA ACCESS
+#     # TODO
+#     # @crs.setter
+#     # @units.setter
+#     def set_hard_dataset(self):
+#         """ read data from passed url/location"""
         
-        self._crs = CRS.from_user_input(int(crs))
-        self._units = self.crs.axis_info[0].unit_name
+#         self._crs = CRS.from_user_input(int(crs))
+#         self._units = self.crs.axis_info[0].unit_name
         

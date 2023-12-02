@@ -56,9 +56,8 @@ class OutputCalculation():
         
         # PROGRAM SET
         self._polygons = None
-        self._calculations = None # set from running the calculation -> dict of lists? index syncrhonized?
-        # self._dump = None # content to dump into file
-        self._s3_url = None # possibly delete?
+        self._calculations = None 
+        self._s3_url = None
         
         # SINGLE SETUP
         self.__set_up_master()
@@ -83,7 +82,6 @@ class OutputCalculation():
         assert self.__set_up_valid_maap_url, f"Invalid URL: see assertions and/or possibly missing s3://maap-ops-workspace/shared/ in url. Provided url: {self._output_maap_url}"
         assert self._day_search_range < 8, f"Excessive provided day range {self._day_search_range}; select smaller search period that is < 8 (or manually edit setting in __set_up_master of Output_Calculation.py"
         assert self._feds_input.crs == self._ref_input.crs, f"Mismatching CRS for FEDS and reference; must correct before continuing: feds: {self._feds_input.crs} vs ref: {self._ref_input.crs}"
-        
         
         # run calculations
         self.__run_calculations() # --> internally finds best matches and runs on the best matches
@@ -110,7 +108,6 @@ class OutputCalculation():
 
             if nested:
                 # iter and locate bucket
-                # List objects in the parent bucket with the specified prefix
                 assert len(bucket) == 2, "FATAL: bucket + prefix design should only be len2"
                 response = s3.list_objects_v2(Bucket=bucket[0], Prefix=bucket[1])
                 folders = set(object['Key'][:object['Key'].rfind('/')+1] for object in response['Contents'] if '/' in object['Key'])
@@ -271,11 +268,21 @@ class OutputCalculation():
 
             # new fig per pair
             fig, ax = plt.subplots(figsize=(15, 15))
-            feds_poly.plot(ax=ax, legend=True, label="FEDS Fire Estimate", color="red",edgecolor="black", linewidth=0.5 )
-            ref_poly.plot(ax=ax, legend=True, label="NIFC Nearest Date + Intersection", color="gold", edgecolor="black", linewidth=0.5, alpha=0.7)
+            feds_plot = feds_poly.plot(ax=ax, legend=True, label="FEDS Fire Estimate", color="red",edgecolor="black", linewidth=0.5 )
+            ref_plot = ref_poly.plot(ax=ax, legend=True, label="Reference Nearest Date + Intersection", color="gold", edgecolor="black", linewidth=0.5, alpha=0.7)
+            
+            # try to add legend functionality
+            handles, labels = [], []
+            for ax in [feds_plot, ref_plot]:
+                handles_ax, labels_ax = ax.get_legend_handles_labels()
+                handles.extend(handles_ax)
+                labels.extend(labels_ax)
+
+            # show legend
+            ax.legend(handles, labels, loc='upper right')
             
             # show plot
-            ax.set_title(f"FEDS at {feds_time} VS. Reference at {ref_time}")
+            ax.set_title(f"FEDS ({index1}) at {feds_time} VS. Ref ({index2}) at {ref_time}")
             ax.set_xlabel("Longitude")
             ax.set_ylabel("Latitude")
             plt.grid(True)
@@ -296,14 +303,27 @@ class OutputCalculation():
         # )
                                  
         return self
-                                 
+    
+    def export_polygons(self, polygons, path: str):
+        """ export polygons to designated paths by user
+            let this be a public access method for the 
+            sake of not re-inventing vars
+        """
+        polygons.to_file(path)
+        print(f"Export complete to path: {path}")
+        
+        return
+    
+    
     # GENERAL PROCESSING METHODS
                                  
     def get_nearest_by_date(dataset, timestamp, dayrange: int):
         """ Identify rows of dataset with timestamp matches;
+        
             expects year, month, date in datetime format
                 dataset: input dataset to search for closest match
                 timestamp: timestamp we want a close match for
+                
             returns: dataset with d->m->y closest matches
         """
 
@@ -328,7 +348,10 @@ class OutputCalculation():
                                  
                                  
     def closest_date_match(self) -> list:
-        """ given the feds and reference polygons -> return list mapping the feds input to closest reference polygons"""
+        """ given the feds and reference polygons
+            return list mapping the feds input to 
+            closest reference polygons
+        """
         
         # store as (feds_poly index, ref_polygon index)
         matches = []
@@ -357,8 +380,8 @@ class OutputCalculation():
                     curr_finds.append(ref_poly_i)
            
             if len(curr_finds) == 0:
+                # debug warnings
                 # logging.warning(f'NO MATCHES FOUND FOR FEDS_POLYGON AT INDEX: {feds_polygons["index"].iloc[feds_poly_i]}; UNABLE TO FIND BEST DATE MATCHES, ATTACHING NONE FOR REFERENCE INDEX')
-               
                 matches.append((feds_polygons['index'].iloc[feds_poly_i], None))
                 continue
             
@@ -371,27 +394,35 @@ class OutputCalculation():
                 timestamp = datetime.strptime(timestamp.values[0], "%Y-%m-%dT%H:%M:%S")
                 time_matches = OutputCalculation.get_nearest_by_date(set_up_finds, timestamp, self._day_search_range)
             except Exception as e:
-                logging.error(f'Encountered error when running get_nearest_by_date: {e}')
-                logging.warning(f'DUE TO ERR: FEDS POLY WITH INDEX {feds_polygons["index"].iloc[feds_poly_i]} HAS NO INTERSECTIONS AT BEST DATES:  ATTACHING NONE FOR REFERENCE INDEX')
+                sys.stdout.write(f'Encountered error when running get_nearest_by_date: {e} \n')
+                sys.stdout.flush()
+                sys.stdout.write(f'DUE TO ERR: FEDS POLY WITH INDEX {feds_polygons["index"].iloc[feds_poly_i]} HAS NO INTERSECTIONS AT BEST DATES:  ATTACHING NONE FOR REFERENCE INDEX \n')
+                sys.stdout.flush()
+                
                 matches.append((feds_polygons['index'].iloc[feds_poly_i], None))
                 continue
             if time_matches is None:
-                logging.error(f'FAILED: No matching dates found even with provided day search range window: {self._day_search_range}, critical benchmarking failure.')
-                logging.warning('Due to failing window, use first intersection as value')
+                sys.stdout.write(f'FAILED TIME WINDOW: No matching dates found even with provided day search range window: {self._day_search_range}, critical benchmarking failure. \n')
+                sys.stdout.flush()
+                sys.stdout.write('Due to failing window, use first intersection as value \n')
+                sys.stdout.flush()
+                
                 time_matches = set_up_finds
-                # sys.exit()
+                
             
             # PHASE 3: FLATTEN TIME MATCHES + INTERSECTING
-            # should multiple candidates occur, flag with error
             intersect_and_date = [time_matches.iloc[[indx]]['index'].values[0] for indx in range(time_matches.shape[0])]
-            # intersect_and_date = [time_matches.iloc[[indx]] for indx in range(time_matches.shape[0])]
             assert len(intersect_and_date) != 0, "FATAL: len 0 should not occur with the intersect + best date array"
-            if len(intersect_and_date) > 1:
-                logging.warning(f'FEDS polygon at index {feds_polygons["index"].iloc[feds_poly_i]} has MULTIPLE qualifying polygons to compare against: {len(intersect_and_date)} resulted. Select first polygon only; SUBJECT TO CHANGE!')
-            [matches.append((feds_polygons['index'].iloc[feds_poly_i], a_match)) for a_match in intersect_and_date[0:1]]
+            # if len(intersect_and_date) > 1:
+            #     sys.stdout.write(f'FEDS polygon at index {feds_polygons["index"].iloc[feds_poly_i]} has MULTIPLE qualifying polygons to compare against: {len(intersect_and_date)} resulted. Select first polygon only; SUBJECT TO CHANGE! \n')
+            #     sys.stdout.flush()
+                
+            # multi match supressor
+            # [matches.append((feds_polygons['index'].iloc[feds_poly_i], a_match)) for a_match in intersect_and_date[0:1]]
+            [matches.append((feds_polygons['index'].iloc[feds_poly_i], a_match)) for a_match in intersect_and_date]
             
                                
-        logging.info('Nearest Date matching complete!')
+        print('DATE MATCHING COMPLETE')
         return matches
     
     def write_to_csv(self):
@@ -472,15 +503,16 @@ class OutputCalculation():
                     feds_time = feds_poly.t.values[0]
                     ref_time = ref_poly['DATE_CUR_STAMP'].values[0]
                     
-                    # t difference
+                    # TODO t difference
                     # feds_minus_ref_time = feds_time - ref_time
                     # UFuncTypeError: ufunc 'subtract' cannot use operands with types dtype('<U19') and dtype('<M8[ns]')
-                    
-                    # (if applicable) suspect incident name match
+                    # suspect name match - use known pre-definedd col labels
                     if 'INCIDENT' in ref_poly.columns:
                         incident_name = ref_poly['INCIDENT'].values[0]
                     elif 'poly_IncidentName' in ref_poly.columns:
                         incident_name = ref_poly['poly_IncidentName'].values[0]
+                    elif 'FIRE_NAME' in ref_poly.columns:
+                        incident_name = ref_poly['FIRE_NAME'].values[0]
                     else:
                         incident_name = ""
                     
@@ -535,12 +567,15 @@ class OutputCalculation():
             return: top_tolerance (best tolerance value from recursion)
 
         """
-        if base_tolerance == 0:
-            return top_tolerance
+        if base_tolerance <= 0.00000001:
+            return top_tolerance, simple_history, performance_history, tolerance_history
 
         # simplify + calculate performance
         simplified_feds = simplify_geometry(feds, base_tolerance)
+        simple_history.append(simplified_feds)
         curr_performance = calc_method(simplified_feds, nifc)
+        performance_history.append(curr_performance)
+        tolerance_history.append(base_tolerance)
 
         # if performance "better" (depends on passed bool / method) -> persist
         if curr_performance < top_performance and lowerPref:
@@ -548,12 +583,13 @@ class OutputCalculation():
             top_tolerance = base_tolerance
         elif curr_performance > top_performance and not lowerPref:
             top_performance = curr_performance
-            top_tolerance = base_toleranc
+            top_tolerance = base_tolerance
 
-        # reduce and keep recursing down
-        base_tolerance -= 1
+        # reduce and keep recursing down - STEP SUBJECT TO CHANGE
+        # TODO: make user accessible 
+        base_tolerance -= 0.001
 
-        return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance, calc_method, lowerPref)
+        return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance, calc_method, lowerPref, simple_history, performance_history, tolerance_history)
 
 
     def areaCalculation(geom_instance):
