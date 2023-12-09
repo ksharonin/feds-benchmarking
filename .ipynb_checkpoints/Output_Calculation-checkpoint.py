@@ -464,7 +464,9 @@ class OutputCalculation():
             csvfile.truncate()
             
             fieldnames = ['feds_index', 
+                          'feds_polygon',
                           'ref_index', 
+                          'ref_polygon',
                           'incident_name', # need to condition if available
                           'feds_timestamp',
                           'ref_timestamp',
@@ -518,7 +520,9 @@ class OutputCalculation():
                     
                     row_data = {
                         'feds_index': calculations['index_pairs'][i][0],
+                        'feds_polygon': self._feds_input._polygons.iloc[i]['geometry'].wkt,
                         'ref_index': calculations['index_pairs'][i][1],
+                        'ref_polygon': self._ref_input._polygons.iloc[i]['geometry'].wkt,
                         'incident_name': incident_name,
                         'feds_timestamp': feds_time,
                         'ref_timestamp': ref_time,
