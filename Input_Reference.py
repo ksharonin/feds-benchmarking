@@ -217,6 +217,8 @@ class InputReference():
             gdf = gdf[gdf.DATE_NOT_NONE == True]
             gdf = gdf.dropna(subset=['poly_PolygonDateTime'])
             gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
+            # outcast non matches in year self._usr_start
+            gdf = gdf[gdf.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
         
         elif self._title == "california_fire_perimeters_all":
             gdf['is_valid_geometry'] = gdf['geometry'].is_valid
@@ -225,6 +227,8 @@ class InputReference():
             gdf = gdf[gdf.DATE_NOT_NONE == True]
             gdf = gdf.dropna(subset=['ALARM_DATE'])
             gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'ALARM_DATE') / 1000.0), axis = 1)
+            # outcast non matches in year self._usr_start
+            gdf = gdf[gdf.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
         
         elif self._title == "WFIGS_Interagency_Fire_Perimeters":
             gdf['is_valid_geometry'] = gdf['geometry'].is_valid
@@ -238,6 +242,7 @@ class InputReference():
             gdf = gdf.dropna(subset=['poly_PolygonDateTime'])
             gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row : datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
             # gdf = gdf.set_crs(self._crs, allow_override=True)
+            gdf = gdf[gdf.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
             gdf = gdf.to_crs(self._crs)
         
         gdf['index'] = gdf.index
@@ -298,6 +303,9 @@ class InputReference():
         assert type(df.iloc[0][time_col_name]) is str, "Fatal: time column not in string form, see README documentation for proper column requirements"
         df['DATE_CUR_STAMP'] =  df.apply(lambda row : datetime.datetime.strptime(getattr(row, time_col_name), t_format), axis = 1)
         
+        # outcast non matches in year self._usr_start
+        df = df[df.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
+        
         df['index'] = df.index
         
         # if incident name present, assign to designated term
@@ -336,6 +344,7 @@ class InputReference():
         # df = df[df.FIRE_YEAR == str(df_year)]
         # df = df[(df['FIRE_YEAR'] >= str(df_start_year)) & (df['FIRE_YEAR'] <= str(df_stop_year))]
         
+        
         if df.shape[0] == 0:
             assert 1 == 0, "Not possible"
             sys.exit()
@@ -345,8 +354,10 @@ class InputReference():
         df['DATE_LEN_VALID'] = df.apply(lambda row : len(getattr(row, 'DATE_CUR')) == 8 , axis = 1)
         df = df[df.DATE_LEN_VALID == True]
         df['DATE_CUR_STAMP'] =  df.apply(lambda row : datetime.datetime.strptime(getattr(row, 'DATE_CUR'), nifc_date_format), axis = 1)
-        df['index'] = df.index
+        # outcast non matches in year self._usr_start
+        df = df[df.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
         
+        df['index'] = df.index
         
         return df
     
@@ -365,6 +376,8 @@ class InputReference():
         df['DATE_NOT_NONE'] = df.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
         df = df[df.DATE_NOT_NONE == True]
         df['DATE_CUR_STAMP'] =  df.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
+        # outcast non matches in year self._usr_start
+        df = df[df.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
         
         
         return df
