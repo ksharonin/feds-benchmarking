@@ -39,6 +39,7 @@ class InputReference():
     # PREDEFINED AGENCY URLS - map mul dict entries?
     URL_MAPS = { 
             "nifc_interagency_history_local": ["/projects/shared-buckets/ksharonin/Latest_Interagency_Fire_Perimeters", "shp_local"],
+       "InterAgencyFirePerimeterHistory_All_Years_View": ["/projects/shared-buckets/ksharonin/InterAgencyFirePerimeterHistory", "shp_local"],
         "WFIGS_Interagency_Fire_Perimeters": [ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
             "WFIGS_current_interagency_fire_perimeters" : ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson" , "arc_gis_online"],
             "current_wildland_fire_incident_locations" :[ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
@@ -157,11 +158,11 @@ class InputReference():
         try:
             df = gpd.read_file(self._ds_url)
         except Exception as generic_err:
-            logger.error(f"ERR: unable to read local shp from url: {self._ds_url}, produced error: {generic_err}")
+            logging.error(f"ERR: unable to read local shp from url: {self._ds_url}, produced error: {generic_err}")
             sys.exit()
         
         # filter based on predfined conds 
-        if self._title == "nifc_interagency_history_local":
+        if self._title == "nifc_interagency_history_local" or self._title == "InterAgencyFirePerimeterHistory_All_Years_View":
             df = self.filter_nifc_interagency_history_local(df)
         elif self._title == "WFIGS_current_interagency_fire_perimeters":
             df = self.filter_WFIGS_current_interagency_fire_perimeters(df)
@@ -320,14 +321,21 @@ class InputReference():
         
         # fetch dates
         df_date = datetime.datetime.fromisoformat(self._usr_start)
-        df_year = df_date.year
+        df_start_year = df_date.year
+        df_date = datetime.datetime.fromisoformat(self._usr_stop)
+        df_stop_year = df_date.year
+            
         nifc_date_format = '%Y%m%d' 
         
         # actions as docstring specifies
         df = df[df.geometry != None]
         df = df[df.GIS_ACRES != 0]
         df = df.set_crs(self._crs, allow_override=True)
-        df = df[df.FIRE_YEAR == str(df_year)]
+        
+        # MISSING ENTRIES
+        # df = df[df.FIRE_YEAR == str(df_year)]
+        # df = df[(df['FIRE_YEAR'] >= str(df_start_year)) & (df['FIRE_YEAR'] <= str(df_stop_year))]
+        
         if df.shape[0] == 0:
             assert 1 == 0, "Not possible"
             sys.exit()

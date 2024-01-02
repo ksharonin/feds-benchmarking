@@ -367,19 +367,26 @@ class OutputCalculation():
         
         # iterate through all feds polys
         for feds_poly_i in tqdm(range(total_iterations), desc="Running FEDS-Reference Match Algorithm", unit="polygon"):
-            # grab feds polygon
+            
+            # grab feds polygon + index layout
             curr_feds_poly = feds_polygons.iloc[[feds_poly_i]]
+            curr_feds_sindex = curr_feds_poly.sindex
+            
             # indices of refs that intersected with this feds poly
             curr_finds = []
             
             # PHASE 1: FIND INTERSECTIONS OF ANY KIND
-            for ref_poly_i in range(ref_polygons.shape[0]):
-                curr_ref_poly = ref_polygons.iloc[[ref_poly_i]]
-                intersect = gpd.overlay(curr_ref_poly, curr_feds_poly, how='intersection')
-                if not intersect.empty:
-                    curr_finds.append(ref_poly_i)
+            for idx in range(len(ref_polygons)):
+                ref_poly = ref_polygons.iloc[idx]
+                tmp_bbox = ref_poly.geometry.bounds
+                possible_matches_index = list(curr_feds_sindex.intersection(tmp_bbox))
+                possible_matches = curr_feds_poly.iloc[possible_matches_index]
+                if not possible_matches.empty:
+                    intersect = gpd.overlay(ref_polygons.iloc[[idx]], possible_matches, how='intersection')
+                    if not intersect.empty:
+                        curr_finds.append(idx)
            
-            if len(curr_finds) == 0:
+            if not len(curr_finds):
                 # debug warnings
                 # logging.warning(f'NO MATCHES FOUND FOR FEDS_POLYGON AT INDEX: {feds_polygons["index"].iloc[feds_poly_i]}; UNABLE TO FIND BEST DATE MATCHES, ATTACHING NONE FOR REFERENCE INDEX')
                 matches.append((feds_polygons['index'].iloc[feds_poly_i], None))
@@ -520,9 +527,9 @@ class OutputCalculation():
                     
                     row_data = {
                         'feds_index': calculations['index_pairs'][i][0],
-                        'feds_polygon': self._feds_input._polygons.iloc[i]['geometry'].wkt,
+                        'feds_polygon': self._feds_input._polygons.loc[calculations['index_pairs'][i][0]]['geometry'].wkt,
                         'ref_index': calculations['index_pairs'][i][1],
-                        'ref_polygon': self._ref_input._polygons.iloc[i]['geometry'].wkt,
+                        'ref_polygon': self._ref_input._polygons.loc[calculations['index_pairs'][i][1]]['geometry'].wkt,
                         'incident_name': incident_name,
                         'feds_timestamp': feds_time,
                         'ref_timestamp': ref_time,
@@ -543,6 +550,71 @@ class OutputCalculation():
         
     
     #### WARNING: EXPERIMENTAL METHODS BELOW, NOT CONFORMING TO OOP DESIGN ###   
+    
+    def init_best_simplify(
+                       calc_method, 
+                       lowerPref, 
+                       top_performance,
+                       base_tolerance
+                      ):
+        """ run simplify algorithm and return back best result
+            use calc_method and control bool to indicate "direction" of best performance
+
+            e.g. calc method symmDiffRatioCalculation(feds_poly, ref_poly)
+            false since higher ratio value is better similarity
+        """
+        
+        master_threshold_collection = []
+        
+        calculations = self._calculations
+        
+        # poly + time fetch
+        feds_polygons = self._feds_input.polygons
+        ref_polygons = self._ref_input.polygons
+        
+        for pair in calculations['index_pairs']:
+            # coresponding index
+            i = calculations['index_pairs'].index(pair)
+            # ignore none value results
+            if all( value is None for value in 
+                    [
+                        calculations['ratio'][i],
+                        calculations['accuracy'][i],
+                        calculations['precision'][i],
+                        calculations['recall'][i],
+                        calculations['iou'][i],
+                        calculations['f1'][i],
+                        calculations['symm_ratio'][i]
+                    ]
+                ):
+                    continue
+            
+            # poly + time extraction
+            # feds_poly = feds_polygons[feds_polygons['index'] == calculations['index_pairs'][i][0]]
+            # ref_poly = ref_polygons[ref_polygons['index'] == calculations['index_pairs'][i][1]]
+        
+            # apply indices
+            index1, index2 = pair
+            feds_poly = feds_polygons[feds_polygons['index'] == index1]
+            ref_poly = ref_polygons[ref_polygons['index'] == index2]
+            
+
+            top_tolerance = 0
+            threshold = best_simplification(sat_fire, 
+                                            air_fire, 
+                                            top_performance, 
+                                            top_tolerance,
+                                            base_tolerance,
+                                            calc_method,
+                                            lowerPref,
+                                            [],
+                                            [], 
+                                            []
+                                           )
+            
+            master_threshold_collection.append(threshold)
+
+        return master_threshold_collection
         
     def simplify_geometry(shape, tolerance):
         """ shape: to simplify
@@ -554,12 +626,14 @@ class OutputCalculation():
         return shape.geometry.simplify(tolerance)
 
     # @TODO: finish implementing recursive function on simplification calc
-    def best_simplification (feds, nifc, 
+    def best_simplification (feds, nifc,
                              top_performance, 
                              top_tolerance, 
                              base_tolerance, 
                              calc_method, 
-                             lowerPref):
+                             lowerPref,
+                             usr_step=0.001
+                             ):
         """ feds: feds source
             nifc: external source to compare to
             top_performance: best numeric value (default is worst value aka > 100 % error)
@@ -571,7 +645,7 @@ class OutputCalculation():
             return: top_tolerance (best tolerance value from recursion)
 
         """
-        if base_tolerance <= 0.00000001:
+        if base_tolerance <= 0.000000000001:
             return top_tolerance, simple_history, performance_history, tolerance_history
 
         # simplify + calculate performance
@@ -591,9 +665,9 @@ class OutputCalculation():
 
         # reduce and keep recursing down - STEP SUBJECT TO CHANGE
         # TODO: make user accessible 
-        base_tolerance -= 0.001
+        base_tolerance -= usr_step
 
-        return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance, calc_method, lowerPref, simple_history, performance_history, tolerance_history)
+        return best_simplification(feds, nifc, top_performance, top_tolerance, base_tolerance, calc_method, lowerPref, simple_history, performance_history, tolerance_history, usr_step)
 
 
     def areaCalculation(geom_instance):
