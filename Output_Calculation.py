@@ -329,7 +329,7 @@ class OutputCalculation():
         """
 
         # timestamp = timestamp.item()
-        transformed = dataset.DATE_CUR_STAMP.tolist() # TODO: deal with this label? or make sure ref sets always have this
+        transformed = dataset.DATE_CUR_STAMP.tolist()
         clos_dict = {
           abs(timestamp.timestamp() - date.timestamp()) : date
           for date in transformed
@@ -341,7 +341,8 @@ class OutputCalculation():
         if abs(timestamp.day - res.day) > dayrange and dayrange == 7:
             return None
 
-        assert abs(timestamp.day - res.day) <= dayrange, "FATAL: No dates found in specified range; try a more flexible range by adjusting `dayrange` var"
+        if not abs(timestamp.day - res.day) <= dayrange: 
+            logging.error("WARNING in get_nearest_by_date: No dates found in specified range for this reference collection; try a more flexible range by adjusting `dayrange` var")
         # fetch rows with res timestamp
         finalized = dataset[dataset['DATE_CUR_STAMP'] == res]
 
@@ -573,6 +574,10 @@ class OutputCalculation():
         for pair in indices:
             
             index1, index2 = pair
+            
+            if index2 is None:
+                continue
+                
             feds_inst = feds_polygons[feds_polygons['index'] == index1]
             ref_inst = ref_polygons[ref_polygons['index'] == index2]
             
@@ -582,11 +587,12 @@ class OutputCalculation():
                 # assert of datetime type 
                 feds_time = datetime.strptime(feds_inst.t.values[0], "%Y-%m-%dT%H:%M:%S")
                 is_within_time_given = OutputCalculation.get_nearest_by_date(ref_inst, feds_time, date_restrict)
-                if not is_within_time_given:
+                if  is_within_time_given.empty or is_within_time_given is None:
                     continue
                 
             # exceeding zone for feds: feds - ref == feds exceed amount
-            diff_area = gpd.overlay(feds_inst, ref_inst, how='symmetric_difference')
+            # diff_area = gpd.overlay(feds_inst, ref_inst, how='symmetric_difference')
+            diff_area = feds_inst.symmetric_difference(ref_inst, align=False)
             
             # open and generate mask tif
             with rasterio.open(tif_path) as src:

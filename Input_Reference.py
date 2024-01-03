@@ -242,7 +242,9 @@ class InputReference():
             gdf = gdf.dropna(subset=['poly_PolygonDateTime'])
             gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row : datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
             # gdf = gdf.set_crs(self._crs, allow_override=True)
+            
             gdf = gdf[gdf.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
+            
             gdf = gdf.to_crs(self._crs)
         
         gdf['index'] = gdf.index
