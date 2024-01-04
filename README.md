@@ -12,7 +12,7 @@ Welcome to the Fire Event Data Suite - Polygon Evaluation and Comparison (FEDS-P
 
 FEDS-PEC is a specialized Python module designed for geospatial data analysis, specifically tailored for FEDS fire perimeters. It offers the following key features:
 
-- Seamless interaction through Jupyter Notebooks (e.g., `BLANK_PEC_Outline.ipynb`).
+- Interaction through Jupyter Notebooks (e.g., `BLANK_PEC_Outline.ipynb`).
 - The flexibility to use predefined reference datasets or user-uploaded/defined datasets.
 - A wide range of calculations, including ratio, accuracy, precision, recall, IOU, F1 score, and symmetric ratio.
 - Dedicated support for fire perimeter data, with plans to expand support for additional datasets based on community feedback.
@@ -20,11 +20,11 @@ FEDS-PEC is a specialized Python module designed for geospatial data analysis, s
 
 ### Why Use FEDS-PEC?
 
-FEDS-PEC eliminates the need for users to recreate/repeat solutions when conducting geospatial data evaluations. By leveraging this module, researchers and analysts can quickly and efficiently compare the FEDS fireperimeter dataset against a reference data set of their choosing. Users can focus their efforts on dataset selection and analysis, rather than spending time implementing and testing software for comparisons and calculations.
+FEDS-PEC eliminates the need for users to recreate/repeat solutions when comparing and evaluating perimeter datasets. By leveraging this module, researchers and analysts can quickly and efficiently compare the FEDS fireperimeter dataset against a reference data set of their choosing. Users can focus their efforts on dataset selection and analysis, rather than spending time implementing and testing software for comparisons and calculations.
 
 ### Who Can Benefit from FEDS-PEC?
 
-FEDS-PEC is primarily aimed at users of the NASA Multi-Algorithm and Analysis Platform (MAAP) platform and the broader Earth science research community.
+FEDS-PEC is primarily aimed at users of the NASA FEDS algorithm perimeters and the broader Earth science research community.
 
 ## Installation Instructions
 
@@ -158,15 +158,11 @@ For a comprehensive demonstration of how to use FEDS-PEC, refer to the ipynbs lo
 
 ## Testing
 
-FEDS-PEC includes strict argument validation to prevent users from accessing unimplemented features. Unit testing for the module is currently under development.
+FEDS-PEC includes strict argument validation to prevent users from accessing unimplemented features. 
 
 ## Upcoming Features
 
-We have plans to enhance FEDS-PEC with the following features:
-
-- Expanded output formats and improved plotting capabilities.
-- Additional predefined datasets for comparison.
-- Potential integration of community-shared datasets, allowing non-admin users to upload and share datasets with the public.
+- Potential integration of community-shared datasets, allowing users to upload and share datasets with the public. See "Contribution and Reporting Issues" section for how to request new datasets. 
 
 ## Key Files and Directories
 
