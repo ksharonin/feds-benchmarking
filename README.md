@@ -4,7 +4,7 @@ Author: Katrina Sharonin
 
 ## Introduction
 
-Welcome to the Fire Event Data Suite - Polygon Evaluation and Comparison (FEDS-PEC) module. FEDS-PEC is a Python library designed to facilitate benchmarking and evaluation of geospatial data, specifically tailored for FEDS fire perimeters. This module allows users to compare these fire perimeters with reference datasets and perform various calculations, including ratio, accuracy, precision, recall, IOU (Intersection over Union), F1 score, and symmetric ratio. The primary goal of FEDS-PEC is to streamline the process of conducting such evaluations, saving time for researchers and analysts. This README provides detailed information on how to install, use, and contribute to the FEDS-PEC module.
+Welcome to the Fire Event Data Suite - Polygon Evaluation and Comparison (FEDS-PEC) module. FEDS-PEC is a Python library designed to facilitate benchmarking and evaluation of geospatial data, specifically tailored for [FEDS fire perimeters](https://nasa-impact.github.io/veda-docs/example-notebooks/wfs.html). This module allows users to compare these fire perimeters with reference datasets and perform various calculations, including ratio, accuracy, precision, recall, IOU (Intersection over Union), F1 score, and symmetric ratio. The primary goal of FEDS-PEC is to streamline the process of conducting such evaluations, saving time for researchers and analysts. This README provides detailed information on how to install, use, and contribute to the FEDS-PEC module.
 
 ## Statement of Need
 
