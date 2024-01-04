@@ -4,7 +4,7 @@ Author: Katrina Sharonin
 
 ## Introduction
 
-Welcome to the Fire Event Data Suite - Polygon Evaluation and Comparison (FEDS-PEC) module. FEDS-PEC is a Python library designed to facilitate benchmarking and evaluation of geospatial data, specifically tailored for FEDS fire perimeters. This module allows users to compare these fire perimeters with reference datasets and perform various calculations, including ratio, accuracy, precision, recall, IOU (Intersection over Union), F1 score, and symmetric ratio. The primary goal of FEDS-PEC is to streamline the process of comparing different fire perimeters, saving time for researchers and analysts. This README provides detailed information on how to install, use, and contribute to the FEDS-PEC module.
+Welcome to the Fire Event Data Suite - Polygon Evaluation and Comparison (FEDS-PEC) module. FEDS-PEC is a Python library designed to facilitate benchmarking and evaluation of geospatial data, specifically tailored for [FEDS fire perimeters](https://nasa-impact.github.io/veda-docs/example-notebooks/wfs.html). This module allows users to compare these fire perimeters with reference datasets and perform various calculations, including ratio, accuracy, precision, recall, IOU (Intersection over Union), F1 score, and symmetric ratio. The primary goal of FEDS-PEC is to streamline the process of conducting such evaluations, saving time for researchers and analysts. This README provides detailed information on how to install, use, and contribute to the FEDS-PEC module.
 
 ## Statement of Need
 
@@ -30,7 +30,7 @@ FEDS-PEC is primarily aimed at users of the NASA FEDS algorithm perimeters and t
 
 To install and use FEDS-PEC, follow these steps:
 
-1. **Conda Environment Setup:** Run the `env-feds.sh` shell script to create the `env-feds` Conda environment. (NOTE: do not instantiate your conda enviornment in a git repository, you will crash the MAAP enviornment due to memory usage) 
+1. **Conda Environment Setup:** Run the `run-dps.sh` shell script to create the `env-feds` Conda environment. (NOTE: do not instantiate your conda enviornment in a git repository it causes high memory usage) 
 
 2. **Notebook Setup:** Edit or make a copy of the `BLANK_FEDS_Outline.ipynb` located in the `blank` directory.
 
