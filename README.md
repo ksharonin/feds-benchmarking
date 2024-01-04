@@ -30,7 +30,7 @@ FEDS-PEC is primarily aimed at users of the NASA Multi-Algorithm and Analysis Pl
 
 To install and use FEDS-PEC, follow these steps:
 
-1. **Conda Environment Setup:** Run the `env-feds.sh` shell script to create the `env-feds` Conda environment. (NOTE: do not instantiate your conda enviornment in a git repository it causes high memory usage) 
+1. **Conda Environment Setup:** Run the `run-dps.sh` shell script to create the `env-feds` Conda environment. (NOTE: do not instantiate your conda enviornment in a git repository it causes high memory usage) 
 
 2. **Notebook Setup:** Edit or make a copy of the `BLANK_FEDS_Outline.ipynb` located in the `blank` directory.
 
