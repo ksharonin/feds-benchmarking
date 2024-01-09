@@ -269,23 +269,15 @@ class OutputCalculation():
 
             # new fig per pair
             fig, ax = plt.subplots(figsize=(15, 15))
-            feds_plot = feds_poly.plot(ax=ax, legend=True, label="FEDS Fire Estimate", color="red",edgecolor="black", linewidth=0.5 )
-            ref_plot = ref_poly.plot(ax=ax, legend=True, label="Reference Nearest Date + Intersection", color="gold", edgecolor="black", linewidth=0.5, alpha=0.7)
+            feds_plot = feds_poly.plot(ax=ax, color="red",edgecolor="black", linewidth=1.5, label="FEDS Fire Estimate")
+            ref_plot = ref_poly.plot(ax=ax, color="gold", edgecolor="black", linewidth=1.5, hatch='\\', alpha=0.7, label="Reference Nearest Date + Intersection")
             
-            # try to add legend functionality
-            handles, labels = [], []
-            for ax in [feds_plot, ref_plot]:
-                handles_ax, labels_ax = ax.get_legend_handles_labels()
-                handles.extend(handles_ax)
-                labels.extend(labels_ax)
-
-            # show legend
-            ax.legend(handles, labels, loc='upper right')
+            # ax.legend(handles=[feds_plot, ref_plot])
             
             # show plot
-            ax.set_title(f"FEDS ({index1}) at {feds_time} VS. Ref ({index2}) at {ref_time}")
-            ax.set_xlabel("Longitude")
-            ax.set_ylabel("Latitude")
+            ax.set_title(f"FEDS ({index1}) at {feds_time} VS. Ref ({index2}) at {ref_time}", fontsize=17)
+            ax.set_xlabel("Longitude", fontsize=14)
+            ax.set_ylabel("Latitude", fontsize=14)
             plt.grid(True)
             plt.show()
         
@@ -405,15 +397,15 @@ class OutputCalculation():
             except Exception as e:
                 sys.stdout.write(f'Encountered error when running get_nearest_by_date: {e} \n')
                 sys.stdout.flush()
-                sys.stdout.write(f'DUE TO ERR: FEDS POLY WITH INDEX {feds_polygons["index"].iloc[feds_poly_i]} HAS NO INTERSECTIONS AT BEST DATES:  ATTACHING NONE FOR REFERENCE INDEX \n')
+                sys.stdout.write(f'DUE TO ERR: FEDS POLY WITH INDEX {feds_polygons["index"].iloc[feds_poly_i]} HAS NO INTERSECTIONS AT BEST DATES: ATTACHING NONE FOR REFERENCE INDEX \n')
                 sys.stdout.flush()
                 
                 matches.append((feds_polygons['index'].iloc[feds_poly_i], None))
                 continue
             if time_matches is None:
-                sys.stdout.write(f'FAILED TIME WINDOW: No matching dates found even with provided day search range window: {self._day_search_range}, critical benchmarking failure. \n')
+                sys.stdout.write(f'TIME MATCH WARNING: the intersecting pair does not have a timestamp difference within the specified day search range window: {self._day_search_range} \n')
                 sys.stdout.flush()
-                sys.stdout.write('Due to failing window, use first intersection as value \n')
+                sys.stdout.write(f'Intersection pair will still be included for user inspection; FEDS at index {feds_poly_i} and Reference at index {curr_finds}. \n')
                 sys.stdout.flush()
                 
                 time_matches = set_up_finds
@@ -617,8 +609,7 @@ class OutputCalculation():
     def init_best_simplify(
                        calc_method, 
                        lowerPref, 
-                       top_performance,
-                       base_tolerance
+                       base_tolerance,
                       ):
         """ run simplify algorithm and return back best result
             use calc_method and control bool to indicate "direction" of best performance
@@ -626,7 +617,11 @@ class OutputCalculation():
             e.g. calc method symmDiffRatioCalculation(feds_poly, ref_poly)
             false since higher ratio value is better similarity
         """
-        
+        if lowerPref:
+            top_performance = 100000000
+        else: 
+            top_performance = 0
+            
         master_threshold_collection = []
         
         calculations = self._calculations

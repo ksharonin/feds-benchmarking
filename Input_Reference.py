@@ -27,22 +27,21 @@ class InputReference():
     """
     
     # AGENCY - these map to specific read types
-    REFERENCE_PREDEFINED_SETS = ["nifc_interagency_history_local", 
-                                 "InterAgencyFirePerimeterHistory_All_Years_View",
+    REFERENCE_PREDEFINED_SETS = [ "InterAgencyFirePerimeterHistory_All_Years_View",
+                                 "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View",
                                  "WFIGS_current_interagency_fire_perimeters",
                                  "california_fire_perimeters_all",
-                                 "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View",
                                  "none"]
     # CONTROL - custom will need to provide their own read types
     CONTROL_TYPE = ["defined", "custom"]
     
     # PREDEFINED AGENCY URLS - map mul dict entries?
     URL_MAPS = { 
-            "nifc_interagency_history_local": ["/projects/shared-buckets/ksharonin/Latest_Interagency_Fire_Perimeters", "shp_local"],
-       "InterAgencyFirePerimeterHistory_All_Years_View": ["/projects/shared-buckets/ksharonin/InterAgencyFirePerimeterHistory", "shp_local"],
-        "WFIGS_Interagency_Fire_Perimeters": [ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
+        "InterAgencyFirePerimeterHistory_All_Years_View": ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/InterAgencyFirePerimeterHistory_All_Years_View/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
+        "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View": ["/projects/shared-buckets/ksharonin/Latest_Interagency_Fire_Perimeters", "shp_local"],
+        # "WFIGS_Interagency_Fire_Perimeters": [ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
             "WFIGS_current_interagency_fire_perimeters" : ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson" , "arc_gis_online"],
-            "current_wildland_fire_incident_locations" :[ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
+            # "current_wildland_fire_incident_locations" :[ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
             "california_fire_perimeters_all": [ "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Fire_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"]
             }
     
@@ -162,7 +161,7 @@ class InputReference():
             sys.exit()
         
         # filter based on predfined conds 
-        if self._title == "nifc_interagency_history_local" or self._title == "InterAgencyFirePerimeterHistory_All_Years_View":
+        if self._title == "nifc_interagency_history_local" or self._title == "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View":
             df = self.filter_nifc_interagency_history_local(df)
         elif self._title == "WFIGS_current_interagency_fire_perimeters":
             df = self.filter_WFIGS_current_interagency_fire_perimeters(df)
@@ -229,6 +228,7 @@ class InputReference():
             gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'ALARM_DATE') / 1000.0), axis = 1)
             # outcast non matches in year self._usr_start
             gdf = gdf[gdf.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
+            gdf = gdf.to_crs(self._crs)
         
         elif self._title == "WFIGS_Interagency_Fire_Perimeters":
             gdf['is_valid_geometry'] = gdf['geometry'].is_valid
@@ -246,6 +246,28 @@ class InputReference():
             gdf = gdf[gdf.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
             
             gdf = gdf.to_crs(self._crs)
+        
+        elif self._title == "InterAgencyFirePerimeterHistory_All_Years_View":
+            df_date = datetime.datetime.fromisoformat(self._usr_start)
+            df_start_year = df_date.year
+            df_date = datetime.datetime.fromisoformat(self._usr_stop)
+            df_stop_year = df_date.year
+
+            nifc_date_format = '%Y%m%d' 
+
+            gdf = gdf[gdf.geometry != None]
+            gdf = gdf[gdf.GIS_ACRES != 0]
+            gdf = gdf.set_crs(self._crs, allow_override=True)
+
+            assert gdf.shape[0] != 0, "Invalid shape identified in ArcGIS API read"
+
+            gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'DATE_CUR') is not None, axis = 1)
+            gdf = gdf[gdf.DATE_NOT_NONE == True]
+            gdf['DATE_LEN_VALID'] = gdf.apply(lambda row : len(getattr(row, 'DATE_CUR')) == 8 , axis = 1)
+            gdf = gdf[gdf.DATE_LEN_VALID == True]
+            gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row : datetime.datetime.strptime(getattr(row, 'DATE_CUR'), nifc_date_format), axis = 1)
+            gdf = gdf[gdf.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
+            
         
         gdf['index'] = gdf.index
         
