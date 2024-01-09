@@ -1,6 +1,10 @@
 # FEDS-PEC (Polygon Evaluation and Comparison) Module Documentation
 
-Author: Katrina Sharonin
+## Authors
+
+Authors: Katrina Sharonin (KS)
+Co-Authors: Tempest McCabe (TM)
+KS conceived of the project, designed and wrote software. KS wrote paper and documentation. TM tested software and advised on project direction. 
 
 ## Introduction
 
@@ -28,7 +32,7 @@ FEDS-PEC is primarily aimed at users of the NASA FEDS algorithm perimeters and t
 
 ## Installation Instructions
 
-To install and use FEDS-PEC, follow these steps:
+Steps to install and use FEDS-PEC:
 
 1. **Conda Environment Setup:** Run the `run-dps.sh` shell script to create the `env-feds` Conda environment. (NOTE: do not instantiate your conda enviornment in a git repository it causes high memory usage) 
 
@@ -45,12 +49,8 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 - `title`: select predefined title sourced from the api, or choose `none` if using a custom local input
     - Implemented:
         - `"firenrt"`: VEDA api fire perimeter dataset
-            - See documentation here for full dataset details: https://nasa-impact.github.io/veda-docs/notebooks/tutorials/mapping-fires.html
-            - Sept 30th
-    - Not implemented:
-        - `"none"`
-        - `"staging-stac"`
-        - `"staging-raster"`
+            - Documentation: https://nasa-impact.github.io/veda-docs/notebooks/tutorials/mapping-fires.html
+            - VEDA Dashboard View: https://www.earthdata.nasa.gov/dashboard/data-catalog/fire
 
 - `collection`: if using a predefined api dataset, choose a corresponding collection, otherwise choose `none` if using a custom local input
     - Implemented:
@@ -58,7 +58,6 @@ This section describes inputs for FEDS and reference datasets and acceptable val
             - `"public.eis_fire_lf_perimeter_archive"`: Perimeter of cumulative fire-area, from fires over 5 km^2 in the Western United States. Every fire perimeter from 2018-2021.
             - `'public.eis_fire_lf_perimeter_nrt'`: Perimeter of cumulative fire-area, from fires over 5 km^2. Every fire perimeter from current year to date.
     - Not implemented:
-        - `"none"`
         - Corresponding title: `"firenrt"`
             - `"public.eis_fire_lf_fireline_archive"`: collection of historic firelines which are line geometry representing historic active fire fronts
             - `"public.eis_fire_snapshot_fireline_nrt"`: Active fire line as estimated by new VIIRS detections. Most fire line from the last 20 days.
@@ -73,11 +72,8 @@ This section describes inputs for FEDS and reference datasets and acceptable val
     - Implemented: 
         - `api`: the VEDA API is an open-source collection of datasets which includes the FEDS fire perimeter dataset. Select this option for the following titles:
             - `"firenrt"`
-            - For more information, please see documentation here: https://nasa-impact.github.io/veda-docs/
-    - Not implemented: 
-        - `local`: Select this option for datasets manually uploaded by the user. This corresponds with the title `"none"`
-        - 
-- `limit`: amount of features to consider for FEDS API access; warning appears if it misses any entries; set to `0` for non-api `none` datasets 
+            - For more information, see documentation: https://nasa-impact.github.io/veda-docs/
+- `limit`: amount of features to consider for FEDS API access; warning appears if it misses any entries. Recommended value is 9000, the API limit maximum.
 - `filter`: `False` or a valid query that compiles with data set e.g. `"farea>5 AND duration>2"`; invalid queries will result in error
 - `apply_final_fire`: for `"firenrt`"  set this to `True` if you want the only the latest fireID to be taken per unique FireID, set `False` for other datasets 
 
@@ -85,11 +81,11 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 
 - `title`:
     - Implemented:
-        - `"nifc_interagency_history_local`: a static shp datset containing all fire perimeters up to 2021 documented by the National Interagency Fire Center (NIFC) for the United States
+        - `"Downloaded_InterAgencyFirePerimeterHistory_All_Years_View`: a static shp datset containing all fire perimeters up to 2023 documented by the National Interagency Fire Center (NIFC) for the United States
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::interagencyfireperimeterhistory-all-years-view/explore?location=32.468087%2C-122.087025%2C3.89 
             - Update frequency: one time/static, downloaded to maap directory once by author
-            - Time period covered: 1909 - 2021
+            - Time period covered: 1909 - 2023
             - Geospatial coverage: United States
         - `"WFIGS_current_interagency_fire_perimeters"`: a dynamic shp dataset containing current wildfire perimeters documented by  by the National Interagency Fire Center (NIFC) for the United States; program activately queries the ArcGIS online source
             - Agency: National Interagency Fire Center (NIFC)
@@ -154,15 +150,29 @@ Define format of output and path, all used to construct `output_maap_url`
 
 ## Example Usage
 
-For a comprehensive demonstration of how to use FEDS-PEC, refer to the ipynbs located in the `demos` directory, such as the `KINCADE_DEMO_FEDS_Outline.ipynb` or `NRT_QUARRY_DEMO.ipynb` notebook, which includes a demonstration using the Kincade Fire dataset.
+For a comprehensive demonstration of how to use FEDS-PEC, users are advised to view the `demos` directory, which contains the following files:
+- `US_2018_TO_2021_ANALYSIS_RUN.ipynb`
+    - FEDS Dataset: 
+    - Reference Datset:
+- `CALFIRE_ALL_PERIMS_DEMO.ipynb`
+    - FEDS Dataset: 
+    - Reference Datset:
+- `CAMP_DEMO_FEDS_Outline.ipynb`
+    - FEDS Dataset: 
+    - Reference Datset:
+- `KINCADE_DEMO_FEDS_Outline.ipynb`
+    - FEDS Dataset: 
+    - Reference Datset:
+- `NRT_QUARRY_DEMO.ipynb`
+    - FEDS Dataset: 
+    - Reference Datset:
+- `NRT_US_DEMO.ipynb`
+    - FEDS Dataset: 
+    - Reference Datset:
 
 ## Testing
 
 FEDS-PEC includes strict argument validation to prevent users from accessing unimplemented features. 
-
-## Upcoming Features
-
-- Potential integration of community-shared datasets, allowing users to upload and share datasets with the public. See "Contribution and Reporting Issues" section for how to request new datasets. 
 
 ## Key Files and Directories
 
@@ -172,9 +182,18 @@ FEDS-PEC includes strict argument validation to prevent users from accessing uni
 - `Utilities.py`: Miscellaneous functions for various operations.
 - `/blank`: directory containing the blank outline ipynb, suggested for quickstart use
 - `/demos`: directory containing demo ipynb, showcasing use cases along with example outputs
+- `/misc`: directory containing additional helper files
 
-## Contribution and Reporting Issues
+## Reporting Issues and Submitting Feedback
 
-For contributions, support, feedback, or reporting issues, please contact Katrina Sharonin at katrina.sharonin@nasa.gov.
+For any bug/issues, users are encouraged to open a github issue on the official FEDS-PEC github, linked here: https://github.com/ksharonin/feds-benchmarking/issues
+
+## Contact Information
+
+For direct contact regarding matters on contributions, support, feedback, or reporting issues, please email Katrina Sharonin at katrina.sharonin@nasa.gov (alternative email: ksharonin@berkeley.edu).
 
 Thank you for using FEDS-PEC to streamline your geospatial data evaluations and comparisons. We welcome your feedback and contributions to help make this module even more powerful and user-friendly.
+
+## Acknowledgments
+
+
