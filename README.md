@@ -36,7 +36,9 @@ FEDS-PEC is primarily aimed at users of the NASA FEDS algorithm perimeters and t
 
 Steps to install and use FEDS-PEC:
 
-1. **Conda Environment Setup:** Run the `run-dps.sh` shell script to create the `env-feds` Conda environment. (NOTE: do not instantiate your conda enviornment in a git repository it causes high memory usage) 
+1. **Conda Environment Setup:** Run the following commands to create the `env-feds` conda environment
+    a. `conda env create -f "env-feds.yml" -p "../env-feds"`
+    b. `source activate "../env-feds"`
 
 2. **Notebook Setup:** Edit or make a copy of the `BLANK_FEDS_Outline.ipynb` located in the `blank` directory.
 
@@ -50,11 +52,13 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 ### FEDS Input Settings
 - `title`: select predefined title sourced from the api, or choose `none` if using a custom local input
     - Implemented:
-        - `"firenrt"`: VEDA api fire perimeter dataset
+        - `"firenrt"`: 
+            - VEDA api fire perimeter dataset
             - Documentation: https://nasa-impact.github.io/veda-docs/notebooks/tutorials/mapping-fires.html
             - VEDA Dashboard View: https://www.earthdata.nasa.gov/dashboard/data-catalog/fire
 
-- `collection`: if using a predefined api dataset, choose a corresponding collection, otherwise choose `none` if using a custom local input
+- `collection`: 
+    - If using a predefined api dataset, choose a corresponding collection, otherwise choose `none` if using a custom local input
     - Implemented:
         - Corresponding title: `"firenrt"`
             - `"public.eis_fire_lf_perimeter_archive"`: Perimeter of cumulative fire-area, from fires over 5 km^2 in the Western United States. Every fire perimeter from 2018-2021.
@@ -72,36 +76,44 @@ This section describes inputs for FEDS and reference datasets and acceptable val
             - `'public.eis_fire_lf_fireline_nrt'`: Active fire line as estimated by new VIIRS detections, from fires over 5 km^2. Every fire line from current year to date.
 - `access_type`:
     - Implemented: 
-        - `api`: the VEDA API is an open-source collection of datasets which includes the FEDS fire perimeter dataset. Select this option for the following titles:
+        - `api`: 
+            - The VEDA API is an open-source collection of datasets which includes the FEDS fire perimeter dataset. Select this option for the following titles:
             - `"firenrt"`
             - For more information, see documentation: https://nasa-impact.github.io/veda-docs/
-- `limit`: amount of features to consider for FEDS API access; warning appears if it misses any entries. Recommended value is 9000, the API limit maximum.
-- `filter`: `False` or a valid query that compiles with data set e.g. `"farea>5 AND duration>2"`; invalid queries will result in error
-- `apply_final_fire`: for `"firenrt`"  set this to `True` if you want the only the latest fireID to be taken per unique FireID, set `False` for other datasets 
+- `limit`: 
+    - Amount of features to consider for FEDS API access; warning appears if it misses any entries. Recommended value is 9000, the API limit maximum.
+- `filter`: 
+    - `False` or a valid query that compiles with data set e.g. `"farea>5 AND duration>2"`; invalid queries will result in error
+- `apply_final_fire`: 
+    - For `"firenrt`"  set this to `True` if you want the only the latest fireID to be taken per unique FireID, set `False` for other datasets 
 
 ### Reference Input Settings
 
 - `title`:
     - Implemented:
-        - `"InterAgencyFirePerimeterHistory_All_Years_View`: a **dynamic** shp datset containing all fire perimeters up to 2023 documented by the National Interagency Fire Center (NIFC) for the United States
+        - `"InterAgencyFirePerimeterHistory_All_Years_View`: 
+            - A **dynamic** shp datset containing all fire perimeters up to 2023 documented by the National Interagency Fire Center (NIFC) for the United States
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/InterAgencyFirePerimeterHistory_All_Years_View/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson
             - Update frequency: every 5 minutes
             - Time period covered: 1909 - Present
             - Geospatial coverage: United States
-        - `"Downloaded_InterAgencyFirePerimeterHistory_All_Years_View`: a **static** shp datset containing all fire perimeters up to 2023 documented by the National Interagency Fire Center (NIFC) for the United States. Provided as a backup for users unable to access ArcGIS services at time of running FEDS-PEC.
+        - `"Downloaded_InterAgencyFirePerimeterHistory_All_Years_View`: 
+            - A **static** shp datset containing all fire perimeters up to 2023 documented by the National Interagency Fire Center (NIFC) for the United States. Provided as a backup for users unable to access ArcGIS services at time of running FEDS-PEC.
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::interagencyfireperimeterhistory-all-years-view/explore?location=32.468087%2C-122.087025%2C3.89 
             - Update frequency: one time/static, downloaded to maap directory once by author
             - Time period covered: 1909 - 2023
             - Geospatial coverage: United States
-        - `"WFIGS_current_interagency_fire_perimeters"`: a dynamic shp dataset containing current wildfire perimeters documented by  by the National Interagency Fire Center (NIFC) for the United States; program activately queries the ArcGIS online source
+        - `"WFIGS_current_interagency_fire_perimeters"`: 
+            - A dynamic shp dataset containing current wildfire perimeters documented by  by the National Interagency Fire Center (NIFC) for the United States; program activately queries the ArcGIS online source
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::wfigs-current-interagency-fire-perimeters/explore?location=0.000000%2C0.000000%2C2.48 
             - Update frequency: every 5 minutes
             - Time period covered: Present
             - Geospatial coverage: United States
-        - `"california_fire_perimeters_all"`: a dynamic shp dataset containing all California fire perimeters up to current date and maintained by CAL FIRE. Program activately queries the ArcGIS online source
+        - `"california_fire_perimeters_all"`: 
+            - A dynamic shp dataset containing all California fire perimeters up to current date and maintained by CAL FIRE. Program activately queries the ArcGIS online source
             - Agency: California Department of Forestry and Protection (CAL FIRE)
             - Source: https://hub-calfire-forestry.hub.arcgis.com/datasets/CALFIRE-Forestry::california-fire-perimeters-all-1/explore?location=37.471701%2C-119.269132%2C6.65
             - Update frequency: 
@@ -119,7 +131,8 @@ This section describes inputs for FEDS and reference datasets and acceptable val
     - Implemented:
         - `"none"`: default, when defined datasets are applied
         - `"local"`: user indicates the file is local on their machine
-- (OPTIONAL, UNLESS USING CUSTOM) `custom_col_assign`: empty dicionary `{}` or a dictionary containing the following keys: `time`, `time_format`, and (OPTIONAL) `incident_name`. The dictionary maps the necessary arguments for the FEDS-PEC program on custom datasets. Information on provided values:
+- (OPTIONAL, UNLESS USING CUSTOM) `custom_col_assign`: 
+    - Empty dicionary `{}` or a dictionary containing the following keys: `time`, `time_format`, and (OPTIONAL) `incident_name`. The dictionary maps the necessary arguments for the FEDS-PEC program on custom datasets. Information on provided values:
     - `time`: type `str`, name of the column of the custom dataset corresponding to the timestamp
     - `time_format`: type `str`, a format code string for the `datetime.strptime()` method. e.g. `"%Y%M%d"`. Python documentation for format coding: https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior 
     - `incident_name`: type `str`, if applicable, the name of the column containing incident titles for each shape. 
