@@ -3,7 +3,9 @@
 ## Authors
 
 Authors: Katrina Sharonin (KS)
+
 Co-Authors: Tempest McCabe (TM)
+
 KS conceived of the project, designed and wrote software. KS wrote paper and documentation. TM tested software and advised on project direction. 
 
 ## Introduction
@@ -81,7 +83,13 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 
 - `title`:
     - Implemented:
-        - `"Downloaded_InterAgencyFirePerimeterHistory_All_Years_View`: a static shp datset containing all fire perimeters up to 2023 documented by the National Interagency Fire Center (NIFC) for the United States
+        - `"InterAgencyFirePerimeterHistory_All_Years_View`: a **dynamic** shp datset containing all fire perimeters up to 2023 documented by the National Interagency Fire Center (NIFC) for the United States
+            - Agency: National Interagency Fire Center (NIFC)
+            - Source: https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/InterAgencyFirePerimeterHistory_All_Years_View/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson
+            - Update frequency: every 5 minutes
+            - Time period covered: 1909 - Present
+            - Geospatial coverage: United States
+        - `"Downloaded_InterAgencyFirePerimeterHistory_All_Years_View`: a **static** shp datset containing all fire perimeters up to 2023 documented by the National Interagency Fire Center (NIFC) for the United States. Provided as a backup for users unable to access ArcGIS services at time of running FEDS-PEC.
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::interagencyfireperimeterhistory-all-years-view/explore?location=32.468087%2C-122.087025%2C3.89 
             - Update frequency: one time/static, downloaded to maap directory once by author
@@ -93,30 +101,29 @@ This section describes inputs for FEDS and reference datasets and acceptable val
             - Update frequency: every 5 minutes
             - Time period covered: Present
             - Geospatial coverage: United States
-        - `"california_fire_perimeters_all"`
+        - `"california_fire_perimeters_all"`: a dynamic shp dataset containing all California fire perimeters up to current date and maintained by CAL FIRE. Program activately queries the ArcGIS online source
             - Agency: California Department of Forestry and Protection (CAL FIRE)
             - Source: https://hub-calfire-forestry.hub.arcgis.com/datasets/CALFIRE-Forestry::california-fire-perimeters-all-1/explore?location=37.471701%2C-119.269132%2C6.65
             - Update frequency: 
             - Time period covered: 1878-Present
             - Geospatial coverage: California
-    - Not implemented:
-        - `""`
 - `control_type`:
     - Implemented:
-        - `"defined"`
-    - Not implemented:
-        - `"custom"`
-- `custom_url`
+        - `"defined"`: flag used for when any of the above defined datasets is applied
+        - `"custom"`: flag used for when a user supplies a custom dataset 
+- (OPTIONAL, UNLESS USING CUSTOM) `custom_url`
     - Implemented:
-        - `"none"`
-    - Not implemented:
-        - `""`
-- `custom_read_type`
+        - `"none"`: default, when defined datasets are applied
+        - `"(user custom url here)"`: user enters the path to their dataset
+- (OPTIONAL, UNLESS USING CUSTOM) `custom_read_type`
     - Implemented:
-        - `"none"`
-    - Not implemented:
-        - `""`
-- `filter`: `False` or a valid query that compiles with data set e.g. `"farea>5 AND duration>2"`; invalid queries will result in error
+        - `"none"`: default, when defined datasets are applied
+        - `"local"`: user indicates the file is local on their machine
+- (OPTIONAL, UNLESS USING CUSTOM) `custom_col_assign`: empty dicionary `{}` or a dictionary containing the following keys: `time`, `time_format`, and (OPTIONAL) `incident_name`. The dictionary maps the necessary arguments for the FEDS-PEC program on custom datasets. Information on provided values:
+    - `time`: type `str`, name of the column of the custom dataset corresponding to the timestamp
+    - `time_format`: type `str`, a format code string for the `datetime.strptime()` method. e.g. `"%Y%M%d"`. Python documentation for format coding: https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior 
+    - `incident_name`: type `str`, if applicable, the name of the column containing incident titles for each shape. 
+- (OPTIONAL) `filter`: `False` or a valid query that compiles with data set e.g. `"farea>5 AND duration>2"`; invalid queries will result in error, user discretion advised.
 
 ### Shared Input Settings
 Inputs shared between FEDS and Reference
@@ -125,54 +132,42 @@ Inputs shared between FEDS and Reference
 - `date stop`
     -  year, month, day, second, tz_offset_hours, tz_offset_minutes, utc_offset
 - `crs`
-- `search bbox`: [top left longitude, top left latitude, bottom right longitude, bottom righ latitude]
-- `day_search_range`: x <= 7, used to search for matching reference polygons e.g. if x = 5 FEDS polygon finds an intersecting polygon, but it is 6 days difference in timestamp, it will not be included in the resulting output pairs.
+- `search bbox`: [top left longitude, top left latitude, bottom right longitude, bottom righ latitude] e.g. US bounding box = `["-125.0", "24.396308", "-66.93457", "49.384358"]`
+- `day_search_range`: integer x such that 0 <= x, used to search for matching reference polygons e.g. if x = 5 FEDS polygon finds an intersecting polygon, but it is 6 days difference in timestamp, it will not be included in the resulting output pairs.
 
 ### Output Settings
-This section is likely to be removed in the future; users are expected to have plotting and downloading skills
-Define format of output and path, all used to construct `output_maap_url` 
-- `maap_username`: passed username to write into shared buckets
-- `name_for_output_file`: f"firenrt_vs_nifc_interagency_{year_start}_{search_bbox[0]}_{search_bbox[1]}_{search_bbox[2]}_{search_bbox[3]}"
-- `output_format`: 
-     - Implemented:
-        - 
-    - Not implemented:
-        - `txt`
-        - `json`
-- `print_on`
+To assist users in persisting output calculations and viewing plots, FEDS-PEC provides the following output settings:
+- `print_on`: type `bool`, `True` will print out identified FEDS and Reference matches along with calculations should the match be within a valid time range and intersect. `False` will suppress the print.
+- `plot_on`: type `bool`, `True` will output plots of identified FEDS and Reference matches that intersect and are in a valid time range, with default plot coloring as: <span style='color:red'> FEDS Perimeters </span> and <span style='color:#B8860B'> Reference Perimeters </span>. `False` will suppress plots.
+- `name_for_output_file`:  = "test_run"
+- `output_format`:
     - Implemented:
-        - `True`
-        - `False`
-- `plot_on`
-    - Not implemented:
-        - `True`
+        - `"csv"`
+- `user_path`: e.g. `"/projects/my-public-bucket/VEDA-PEC/results"`
+- (OPTIONAL) `output_maap_url`: e.g. `f"{user_path}/{name_for_output_file}.{output_format}"`
 
 
 ## Example Usage
 
 For a comprehensive demonstration of how to use FEDS-PEC, users are advised to view the `demos` directory, which contains the following files:
 - `US_2018_TO_2021_ANALYSIS_RUN.ipynb`
-    - FEDS Dataset: 
-    - Reference Datset:
+    - FEDS Dataset: public.eis_fire_lf_perimeter_archive
+    - Reference Datset: InterAgencyFirePerimeterHistory_All_Years_View
 - `CALFIRE_ALL_PERIMS_DEMO.ipynb`
-    - FEDS Dataset: 
-    - Reference Datset:
+    - FEDS Dataset: public.eis_fire_lf_perimeter_archive
+    - Reference Datset: california_fire_perimeters_all
 - `CAMP_DEMO_FEDS_Outline.ipynb`
-    - FEDS Dataset: 
-    - Reference Datset:
+    - FEDS Dataset: public.eis_fire_lf_perimeter_archive
+    - Reference Datset: InterAgencyFirePerimeterHistory_All_Years_View
 - `KINCADE_DEMO_FEDS_Outline.ipynb`
-    - FEDS Dataset: 
-    - Reference Datset:
+    - FEDS Dataset: public.eis_fire_lf_perimeter_archive
+    - Reference Datset: InterAgencyFirePerimeterHistory_All_Years_View
 - `NRT_QUARRY_DEMO.ipynb`
-    - FEDS Dataset: 
-    - Reference Datset:
+    - FEDS Dataset: public.eis_fire_lf_perimeter_nrt
+    - Reference Datset: WFIGS_current_interagency_fire_perimeters
 - `NRT_US_DEMO.ipynb`
-    - FEDS Dataset: 
-    - Reference Datset:
-
-## Testing
-
-FEDS-PEC includes strict argument validation to prevent users from accessing unimplemented features. 
+    - FEDS Dataset: public.eis_fire_lf_perimeter_nrt
+    - Reference Datset: WFIGS_current_interagency_fire_perimeters
 
 ## Key Files and Directories
 
@@ -183,6 +178,10 @@ FEDS-PEC includes strict argument validation to prevent users from accessing uni
 - `/blank`: directory containing the blank outline ipynb, suggested for quickstart use
 - `/demos`: directory containing demo ipynb, showcasing use cases along with example outputs
 - `/misc`: directory containing additional helper files
+
+## Stability and Development
+
+For reliable performance and validation, users are advised to strictly remain on the `FEDS-PEC-Protected` branch. For experimental/non-stable features and active development, users can consult the `dev` branch at their own discretion. Only finalized features are released and merged into the `FEDS-PEC-Protected` branch after testing.
 
 ## Reporting Issues and Submitting Feedback
 

@@ -81,7 +81,7 @@ class OutputCalculation():
         
         assert self._output_format in OutputCalculation.OUTPUT_FORMATS, f"Provided output format {self._output_format} is NOT VALID, select only from implemented formats: {OutputCalculation.OUTPUT_FORMATS}"
         assert self.__set_up_valid_maap_url, f"Invalid URL: see assertions and/or possibly missing s3://maap-ops-workspace/shared/ in url. Provided url: {self._output_maap_url}"
-        assert self._day_search_range < 8, f"Excessive provided day range {self._day_search_range}; select smaller search period that is < 8 (or manually edit setting in __set_up_master of Output_Calculation.py"
+        assert self._day_search_range >= 0, f"Invalid provided day range {self._day_search_range}. Must be x >= 0"
         assert self._feds_input.crs == self._ref_input.crs, f"Mismatching CRS for FEDS and reference; must correct before continuing: feds: {self._feds_input.crs} vs ref: {self._ref_input.crs}"
         
         # run calculations
