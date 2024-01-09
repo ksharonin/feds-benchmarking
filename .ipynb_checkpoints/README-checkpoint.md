@@ -18,7 +18,7 @@ Welcome to the Fire Event Data Suite - Polygon Evaluation and Comparison (FEDS-P
 
 FEDS-PEC is a specialized Python module designed for geospatial data analysis, specifically tailored for FEDS fire perimeters. It offers the following key features:
 
-- Interaction through Jupyter Notebooks (e.g., `BLANK_PEC_Outline.ipynb`).
+- Interaction through Jupyter Notebooks (e.g. `KINCADE_DEMO_FEDS_Outline.ipynb`, `BLANK_PEC_Outline.ipynb`).
 - The flexibility to use predefined reference datasets or user-uploaded/defined datasets.
 - A wide range of calculations, including ratio, accuracy, precision, recall, IOU, F1 score, and symmetric ratio.
 - Dedicated support for fire perimeter data, with plans to expand support for additional datasets based on community feedback.
@@ -127,47 +127,102 @@ This section describes inputs for FEDS and reference datasets and acceptable val
 
 ### Shared Input Settings
 Inputs shared between FEDS and Reference
-- `date start`
-    - year, month, day, second, tz_offset_hours, tz_offset_minutes, utc_offset
-- `date stop`
-    -  year, month, day, second, tz_offset_hours, tz_offset_minutes, utc_offset
+- `search_start`/ `search_stop`
+    - Date search range for the FEDS/Reference Datasets. FEDS-PEC notebooks only requires integers and will apply a formatting procedure via helper functions. 
+    - Formatting procedure:
+    ``` 
+    
+    # START TIME
+    year_start = 2020
+    month_start = 7 
+    day_start = 1
+    hour_start = 0
+    minute_start = 0
+    second_start = 0
+    tz_offset_hours_start = 0
+    tz_offset_minutes_start = 0
+    utc_offset_start = '00:00'
+
+    # END TIME
+    year_stop = 2020
+    month_stop = 8
+    day_stop = 30
+    hour_stop = 0
+    minute_stop = 0
+    second_stop = 0
+    tz_offset_hours_stop = 0
+    tz_offset_minutes_stop = 0
+    utc_offset_stop = '00:00'
+    
+    # stop date formatting
+    search_start = Utilities.format_datetime(year_start, 
+                                         month_start, 
+                                         day_start, 
+                                         hour_start, 
+                                         minute_start, 
+                                         second_start, 
+                                         tz_offset_hours_start, 
+                                         tz_offset_minutes_start,
+                                         utc_offset_start)
+    # stop date formatting
+    search_stop = Utilities.format_datetime(year_stop, 
+                                            month_stop, 
+                                            day_stop, 
+                                            hour_stop, 
+                                            minute_stop, 
+                                            second_stop, 
+                                            tz_offset_hours_stop, 
+                                            tz_offset_minutes_stop,
+                                            utc_offset_stop)
+
+
+    ```
 - `crs`
-- `search bbox`: [top left longitude, top left latitude, bottom right longitude, bottom righ latitude] e.g. US bounding box = `["-125.0", "24.396308", "-66.93457", "49.384358"]`
-- `day_search_range`: integer x such that 0 <= x, used to search for matching reference polygons e.g. if x = 5 FEDS polygon finds an intersecting polygon, but it is 6 days difference in timestamp, it will not be included in the resulting output pairs.
+    - Type `str`, coordinate reference system of the program, entered as a str of the number e.g. ``"3857"` representing EPSG:3857
+- `search bbox`: 
+    - Geographic bounding box for the FEDS dataset query, formatted as: [top left longitude, top left latitude, bottom right longitude, bottom righ latitude] e.g. US bounding box = `["-125.0", "24.396308", "-66.93457", "49.384358"]`
+- `day_search_range`: 
+    - Integer x such that 0 <= x, used to search for matching reference polygons e.g. if x = 5 FEDS polygon finds an intersecting polygon, but it is 6 days difference in timestamp, it will not be included in the resulting output pairs.
 
 ### Output Settings
 To assist users in persisting output calculations and viewing plots, FEDS-PEC provides the following output settings:
-- `print_on`: type `bool`, `True` will print out identified FEDS and Reference matches along with calculations should the match be within a valid time range and intersect. `False` will suppress the print.
-- `plot_on`: type `bool`, `True` will output plots of identified FEDS and Reference matches that intersect and are in a valid time range, with default plot coloring as: <span style='color:red'> FEDS Perimeters </span> and <span style='color:#B8860B'> Reference Perimeters </span>. `False` will suppress plots.
-- `name_for_output_file`:  = "test_run"
+- `print_on`: 
+    - Type `bool`, `True` will print out identified FEDS and Reference matches along with calculations should the match be within a valid time range and intersect. `False` will suppress the print.
+- `plot_on`: 
+    - Type `bool`, `True` will output plots of identified FEDS and Reference matches that intersect and are in a valid time range, with default plot coloring is **FEDS == red** and **Reference == gold with hatching**. `False` will suppress plots.
+- `name_for_output_file`:  
+    - Name of output file without file extension, e.g. "test_run"
 - `output_format`:
+    - Output file format for results
     - Implemented:
         - `"csv"`
-- `user_path`: e.g. `"/projects/my-public-bucket/VEDA-PEC/results"`
-- (OPTIONAL) `output_maap_url`: e.g. `f"{user_path}/{name_for_output_file}.{output_format}"`
+- `user_path`: 
+    - Path to directory where output file will be placed, e.g. `"/projects/my-public-bucket/VEDA-PEC/results"`
+- (OPTIONAL) `output_maap_url`: 
+    - Final path for program to output result; this combines the previous output arguments provided by users. Users can optionally override this as needed e.g. `f"{user_path}/{name_for_output_file}.{output_format}"`
 
 
 ## Example Usage
 
 For a comprehensive demonstration of how to use FEDS-PEC, users are advised to view the `demos` directory, which contains the following files:
 - `US_2018_TO_2021_ANALYSIS_RUN.ipynb`
-    - FEDS Dataset: public.eis_fire_lf_perimeter_archive
-    - Reference Datset: InterAgencyFirePerimeterHistory_All_Years_View
+    - FEDS Dataset: `public.eis_fire_lf_perimeter_archive`
+    - Reference Datset: `InterAgencyFirePerimeterHistory_All_Years_View`
 - `CALFIRE_ALL_PERIMS_DEMO.ipynb`
-    - FEDS Dataset: public.eis_fire_lf_perimeter_archive
-    - Reference Datset: california_fire_perimeters_all
+    - FEDS Dataset: `public.eis_fire_lf_perimeter_archive`
+    - Reference Datset: `california_fire_perimeters_all`
 - `CAMP_DEMO_FEDS_Outline.ipynb`
-    - FEDS Dataset: public.eis_fire_lf_perimeter_archive
-    - Reference Datset: InterAgencyFirePerimeterHistory_All_Years_View
+    - FEDS Dataset: `public.eis_fire_lf_perimeter_archive`
+    - Reference Datset: `InterAgencyFirePerimeterHistory_All_Years_View`
 - `KINCADE_DEMO_FEDS_Outline.ipynb`
-    - FEDS Dataset: public.eis_fire_lf_perimeter_archive
-    - Reference Datset: InterAgencyFirePerimeterHistory_All_Years_View
+    - FEDS Dataset: `public.eis_fire_lf_perimeter_archive`
+    - Reference Datset: `InterAgencyFirePerimeterHistory_All_Years_View`
 - `NRT_QUARRY_DEMO.ipynb`
-    - FEDS Dataset: public.eis_fire_lf_perimeter_nrt
-    - Reference Datset: WFIGS_current_interagency_fire_perimeters
+    - FEDS Dataset: `public.eis_fire_lf_perimeter_nrt`
+    - Reference Datset: `WFIGS_current_interagency_fire_perimeters`
 - `NRT_US_DEMO.ipynb`
-    - FEDS Dataset: public.eis_fire_lf_perimeter_nrt
-    - Reference Datset: WFIGS_current_interagency_fire_perimeters
+    - FEDS Dataset: `public.eis_fire_lf_perimeter_nrt`
+    - Reference Datset: `WFIGS_current_interagency_fire_perimeters`
 
 ## Key Files and Directories
 
