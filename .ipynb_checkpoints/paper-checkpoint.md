@@ -11,7 +11,7 @@ authors:
     equal-contrib: true
     affiliation: 1
   - name: Tempest McCabe
-    equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
+    equal-contrib: false 
     affiliation: 1
 affiliations:
  - name: NASA Goddard Space and Flight Center
@@ -30,7 +30,7 @@ Overall, FEDS-PEC optimizes evaluation processes, empowering researchers and ana
 
 # Statement of need
 
-Over the past two decades, wildfires in the Western U.S. have increased in severity, frequency, and size [Dennison et al, Weber et al]. Paired with the expansion of the wildland-urban interface [Readeloff et al, Hammer et al], estimated national wildfire damage costs on an annualized basis range from $63.5 billion to $285.0 billion [Thomas et al]. In addition, between 1901-2011, 674 civilian wildfire fatalities occurred in North America [Haynes et al USDA]. California wildfires have claimed 150 lives over the past 5 years alone [CAL FIRE top 20] and over 30% of total U.S. wildland firefighter fatalities from 1910-2010 [Haynes et al USDA].
+Over the past two decades, wildfires in the Western U.S. have increased in severity, frequency, and size @dennison_large_2014, @weber_spatiotemporal_2020. Paired with the expansion of the wildland-urban interface [Readeloff et al, Hammer et al], estimated national wildfire damage costs on an annualized basis range from $63.5 billion to $285.0 billion [Thomas et al]. In addition, between 1901-2011, 674 civilian wildfire fatalities occurred in North America [Haynes et al USDA]. California wildfires have claimed 150 lives over the past 5 years alone [CAL FIRE top 20] and over 30% of total U.S. wildland firefighter fatalities from 1910-2010 [Haynes et al USDA].
 
 With the growing risk to property and livelihood in the U.S., precise and efficient methods of tracking active fire spread are critical for supporting near real-time firefighting response and wildfire management decision-making. Several map-making methods are practiced by firefighting agencies to track fire size and location. Primary methods include GPS-walking, GPS flight, and infrared image interpretation [NIFC 2022 Wildfire Perimeter Map Methods]. The latter method, infrared imaging (IR), is one of the most widely demanded due to daily data delivery for routine briefings and synoptic coverage; between 2013 and 2017, yearly IR requests for the USDA Forest Service’s National Infrared Operations Program (NIROPS) increased from about 1.4k to just over 3.0k [USFS NIROPS Poster]. However, aerial infrared imaging methods involve several acquisition challenges, including cost, sensor operation restrictions, limited ability to meet coverage demand, and latency.
 Among NASA’s existing projects and tools, the development of thermal remote-sensing via satellites stands as a major potential augmentation to wildfire operations and mapping. The Moderate Resolution Imaging Spectroradiometer (MODIS) aboard the Aqua and Terra satellites, and the Visible Infrared Imaging Radiometer Suite (VIIRS) aboard S-NPP and NOAA 20 (formally known as JPSS-1), represent the primary tools for NASA’s wildfire remote-sensing initiative.
@@ -89,7 +89,8 @@ FEDS-PEC requires user inputs of time interval, region, and dataset settings to 
 All calculation formulas can be viewed in `Output_Calculation.py` as python methods.
 
 ## Logic and Workflow
-![Figure 2: Logic Diagram](images/FEDS_PEC_Logic.drawio (2).png)
+
+![Figure 2: Logic Diagram](images/FEDS_PEC_Logic.drawio (2).png){ height=200px }
 
 ## User Set-up Guide
 
@@ -109,12 +110,7 @@ Citations to entries in paper.bib should be in
 format.
 
 If you want to cite a software repository URL (e.g. something on GitHub without a preferred
-citation) then you can do it with the example BibTeX entry below for @fidgit.
-
-For a quick reference, the following citation commands can be used:
-- `@author:2001`  ->  "Author et al. (2001)"
-- `[@author:2001]` -> "(Author et al., 2001)"
-- `[@author1:2001; @author2:2001]` -> "(Author1 et al., 2001; Author2 et al., 2002)"
+citation) then you can do it with the example BibTeX entry below for @hammer_wildlandurban_2007.
 
 # Acknowledgements
 
