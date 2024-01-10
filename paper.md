@@ -56,9 +56,9 @@ Importantly, FEDS-PEC  is not a general spatial calculation package. Instead, it
 
 FEDS-PEC will compare vector perimeters from different sources, perform multiple calculation functions, and output numerical and visual results (Figure 1). 
 
-FEDS-PEC requires user inputs of time interval, region, and dataset settings to generate 3 objects: `` `InputFEDS` ``, `` `InputReference` ``, and `` `OutputCalculation` ``. 
+FEDS-PEC requires user inputs of time interval, region, and dataset settings to generate 3 objects: ``InputFEDS``, ``InputReference``, and ``OutputCalculation``. 
 
-`` `InputFEDS` `` represents the FEDS perimeter input. `` `InputReference` `` represents the stakeholder dataset (e.g. NIFC archive polygon, CAL FIRE historic perimeter, etc). `` `OutputCalculation` `` is an object which stores the results of comparing `` `InputFEDS` `` and `` `InputReference` ``. It will generate verbose outputs that users can subsequently use to plot information. 
+``InputFEDS`` represents the FEDS perimeter input. ``InputReference`` represents the stakeholder dataset (e.g. NIFC archive polygon, CAL FIRE historic perimeter, etc). ``OutputCalculation`` is an object which stores the results of comparing ``InputFEDS`` and ``InputReference``. It will generate verbose outputs that users can subsequently use to plot information. 
 
 ## Supported API for FEDS Perimeters
 - FEDS perimeters are sourced via a single VEDA API; documentation can be found at [VEDA documentation]. However, only specific collections of the API are supported. See below implemented collections: 
@@ -90,7 +90,7 @@ All calculation formulas can be viewed in `Output_Calculation.py` as python meth
 
 ## Logic and Workflow
 
-![Figure 2: Logic Diagram](images/FEDS_PEC_Logic.drawio (2).png){ height=1600px }
+![Figure 2: Logic Diagram](images/FEDS_PEC_Logic.drawio (2).png){ height=2100px }
 
 ## User Set-up Guide
 
