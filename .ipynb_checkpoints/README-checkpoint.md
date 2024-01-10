@@ -37,8 +37,10 @@ FEDS-PEC is primarily aimed at users of the NASA FEDS algorithm perimeters and t
 Steps to install and use FEDS-PEC:
 
 1. **Conda Environment Setup:** Run the following commands to create the `env-feds` conda environment
-    a. `conda env create -f "env-feds.yml" -p "../env-feds"`
-    b. `source activate "../env-feds"`
+    - `git clone` the FEDS-PEC git repo
+    - `cd` into the FEDS-PEC git repo
+    - `conda env create -f "env-feds.yml" -p "../env-feds"`
+    - `source activate "../env-feds"`
 
 2. **Notebook Setup:** Edit or make a copy of the `BLANK_FEDS_Outline.ipynb` located in the `blank` directory.
 
@@ -259,8 +261,9 @@ For any bug/issues, users are encouraged to open a github issue on the official 
 
 For direct contact regarding matters on contributions, support, feedback, or reporting issues, please email Katrina Sharonin at katrina.sharonin@nasa.gov (alternative email: ksharonin@berkeley.edu).
 
-Thank you for using FEDS-PEC to streamline your geospatial data evaluations and comparisons. We welcome your feedback and contributions to help make this module even more powerful and user-friendly.
+Thank you for using FEDS-PEC to streamline your geospatial data evaluations and comparisons. We welcome your feedback and contributions!
 
 ## Acknowledgments
 
+EIS-Fire, NASA GSFC Pathways Program
 
