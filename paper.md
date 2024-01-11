@@ -8,7 +8,7 @@ tags:
 authors:
   - name: Katrina Sharonin
     orcid: 0009-0000-5146-2633
-    equal-contrib: true
+    equal-contrib: false
     affiliation: 1
   - name: Tempest McCabe
     equal-contrib: false 
@@ -30,7 +30,7 @@ Overall, FEDS-PEC optimizes evaluation processes, empowering researchers and ana
 
 # Statement of need
 
-Over the past two decades, wildfires in the Western U.S. have increased in severity, frequency, and size (@dennison_large_2014, @weber_spatiotemporal_2020). Paired with the expansion of the wildland-urban interface (@radeloff_rapid_2018, @hammer_wildlandurban_2007), estimated national wildfire damage costs on an annualized basis range from $63.5 billion to $285.0 billion (@thomas_costs_2017). In addition, between 1901-2011, 674 civilian wildfire fatalities occurred in North America (@manzello_wildfires_2020). California wildfires have claimed 150 lives over the past 5 years alone (@porter_2020_2020) and over 30% of total U.S. wildland firefighter fatalities from 1910-2010 (@manzello_wildfires_2020).
+Over the past two decades, wildfires in the Western U.S. have increased in severity, frequency, and size (@dennison_large_2014, @weber_spatiotemporal_2020). Paired with the expansion of the wildland-urban interface (@radeloff_rapid_2018, @hammer_wildlandurban_2007), estimated national wildfire damage costs on an annualized basis range from $63.5 billion to $285.0 billion (@thomas_costs_2017). In addition, between 1901-2011, 674 civilian wildfire fatalities occurred in North America (@manzello_wildfires_2020). In 2020 alone, California wildfires claimed 45 lives (@porter_2020_2020).
 
 With the growing risk to property and livelihood in the U.S., precise and efficient methods of tracking active fire spread are critical for supporting near real-time firefighting response and wildfire management decision-making. Several map-making methods are practiced by firefighting agencies to track fire size and location. Primary methods include GPS-walking, GPS flight, and infrared image interpretation (@noauthor_national_nodate). The latter method, infrared imaging (IR), is one of the most widely demanded due to daily data delivery for routine briefings and synoptic coverage; between 2013 and 2017, yearly IR requests for the USDA Forest Service’s National Infrared Operations Program (NIROPS) increased from about 1.4k to just over 3.0k [USFS NIROPS Poster]. However, aerial infrared imaging methods involve several acquisition challenges, including cost, sensor operation restrictions, limited ability to meet coverage demand, and latency.
 Among NASA’s existing projects and tools, the development of thermal remote-sensing via satellites stands as a major potential augmentation to wildfire operations and mapping. The Moderate Resolution Imaging Spectroradiometer (MODIS) aboard the Aqua and Terra satellites, and the Visible Infrared Imaging Radiometer Suite (VIIRS) aboard S-NPP and NOAA 20 (formally known as JPSS-1), represent the primary tools for NASA’s wildfire remote-sensing initiative.
@@ -159,7 +159,7 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
 
 ## Directory and File Structure
 
-As of version 1.0, the FEDS-PEC project consists of the single repository ``feds-benchmarking`` (URL: [https://github.com/ksharonin/feds-benchmarking] (https://github.com/ksharonin/feds-benchmarking)). The repository consists of the following directories and files on the main branch, FEDS-PEC-Protected:
+As of version 1.0.0, the FEDS-PEC project consists of the single repository ``feds-benchmarking`` (URL: [https://github.com/ksharonin/feds-benchmarking] (https://github.com/ksharonin/feds-benchmarking)). The repository consists of the following directories and files on the main branch, FEDS-PEC-Protected:
 
 - Files in Main Directory
     - ``README.md``: the key document describing installation and configuration instructions. Contains detailed information on inputs and outputs.
@@ -217,8 +217,6 @@ For any bug and issues, users are encouraged to open a github issue on the offic
 To demonstrate the potential research application of FEDS-PEC, the notebook ``US_2018_TO_2021_ANALYSIS_RUN.ipynb`` was run to produce CSV output files, each of which was consolidated into the result Table 1.
 This notebook compares FEDS large fire archives API dataset [Link/number to citation] against the NIFC InterAgencyFirePerimeterHistory All Years View dataset (@signell_veda_2023) from January 2018 to December 2021 inclusive. The notebook was run on multiple time intervals which compose the 2018 to 2021 range due to the FEDS API limited to 9000 outputs per run. The notebook performs the standard FEDS-PEC procedure: for each FEDS-PEC match via temporal and geographical matching, a pair is formed. For every pair, FEDS-PEC calculations the ratio, accuracy, precision, recall, IOU, F1, and Symmetric Ratio.
 
-[TODO- finish analysis, insert citation]
-
 | Absolute Day Difference | Number of FEDS/Reference Pairs | Median Ratio | Median Accuracy | Median Precision | Median Recall | Median IOU | Median F1 | Median Symmetric Ratio (FEDS - Reference) |
 |-------------------------|--------------------------------|--------------|------------------|-------------------|--------------|------------|-----------|--------------------------------------------|
 |           0             |               4                |    0.876     |      0.821       |       0.766       |     0.671     |    0.23    |   0.445   |                0.737                       |
@@ -230,11 +228,22 @@ This notebook compares FEDS large fire archives API dataset [Link/number to cita
 |           6             |               8                |    1.216     |      0.794       |       0.763       |     0.867     |   0.329    |   0.631   |                0.552                       |
 |           7             |               7                |    0.579     |      0.576       |       0.804       |     0.485     |   0.09     |   0.181   |                0.924                       |
 |           8+            |               132              |    0.974     |      0.703       |       0.774       |     0.612     |   0.115    |   0.236   |                0.944                       |
-
+[]{label="Table 1: 2018-2021 United States FEDS Perimeter Archive VS. NIFC InterAgencyFirePerimeterHistory All Years View Statistical Results, rounded to the third decimal place"}
 
 ## Tenative Results Discussion
 
-[TODO]
+An example output table for the ``US_2018_TO_2021_ANALYSIS_RUN.ipynb`` run is demonstrated in Table 1. Each CSV row entry represents an absolute day difference category (how far apart in days the FEDS and Reference timestamp are). FEDS-Reference pairs occurring 1 day appart are sorted into the 1 day category, 2 day into 2 day, etc. In addition, the number of pairs per category is displayed in the “Numer of FEDS/Reference Pairs” column. Lastly, for each day difference category, there are 7 calculation type columns (ratio, accuracy precision, recall, IOU, F1, symmetric ratio). Each calculation typecolumn value is the median of all calculations of the specified type, per entries in the category (e.g. 0.876 is the median value of all ratio values of FEDS/Reference pairs in the 0 day difference category).  
+
+One potential interpretation of the results in Table 1 is after 4 days of difference, overall accuracy begins to decrease. However, 8+ day difference row stands as an exception, likely indicating that there are wildfire perimeters slowing in growth, such that satellite observations recreate the growth despite the absolute day difference.  
+
+However, it is important to note that the timestamps of the NIFC InterAgencyFirePerimeterHistory All Years View dataset may vary in accuracy (e.g. timestamp records last edit of polygon, not actual polygon creation). This challenge is one of many that can be faced when using third party datasets for fire perimeter research, which can be overcome by manual inspection of data and plotting datasets, all supported by FEDS-PEC outputs.
+
+Overall, this type of summary would be useful for more thoroughly examining the perimeter accuracy and growth relationship with time in the future. 
+
+
+# Author contribution section:
+
+Katrina Sharonin conceived of the project, designed and wrote software. Katrina Sharonin also wrote the JOSS paper and documentation. Tempest McCabe tested software and advised on project direction. 
 
 # Acknowledgements
 
