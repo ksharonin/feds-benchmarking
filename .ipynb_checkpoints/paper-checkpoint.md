@@ -2,12 +2,12 @@
 title: 'FEDS-PEC: A Python Module for Streamlining NASA Fire Perimeters Comparisons to Alternative Mapping Methods'
 tags:
   - NASA
-  - wildfire
-  - fire perimeter
+  - Wildfire
+  - Fire perimeter
   - Python
 authors:
   - name: Katrina Sharonin
-    orcid: 0000-0000-0000-0000
+    orcid: 0009-0000-5146-2633
     equal-contrib: true
     affiliation: 1
   - name: Tempest McCabe
@@ -71,18 +71,18 @@ FEDS-PEC requires user inputs of time interval, region, and dataset settings to 
 ## Supported APIs for Reference Fire Perimeters
 - NIFC Open Data: InterAgencyFirePerimeterHistory All Years View
     - Description:
-    - URL: https://data-nifc.opendata.arcgis.com/maps/interagencyfireperimeterhistory-all-years-view 
+    - URL: [https://data-nifc.opendata.arcgis.com/maps/interagencyfireperimeterhistory-all-years-view](https://data-nifc.opendata.arcgis.com/maps/interagencyfireperimeterhistory-all-years-view)
     - `` ref_title = “InterAgencyFirePerimeterHistory_All_Years_View” ``
     - Note: This dataset has been predownloaded into a MAAP directory. Should users have access to MAAP and interest in a stable static version of the dataset, use `` ref_title = “Downloaded_InterAgencyFirePerimeterHistory_All_Years_View” ``
     - Note: Users can download this dataset via the provided link; select “download” and the “ShapeFile” option. 
 - NIFC Open Data: WFIGS Current Interagency Fire Perimeters
     - Description:
-    - URL: https://data-nifc.opendata.arcgis.com/maps/wfigs-current-interagency-fire-perimeters 
+    - URL: [https://data-nifc.opendata.arcgis.com/maps/wfigs-current-interagency-fire-perimeters](https://data-nifc.opendata.arcgis.com/maps/wfigs-current-interagency-fire-perimeters)
     - `` ref_title = “WFIGS_current_interagency_fire_perimeters” ``
     - Note: Users can download this dataset via the provided link; select “download” and the “ShapeFile” option. 
 - California Department of Forestry and Fire Protection: California Fire Perimeters (all)
     - Description:
-    - URL: https://gis.data.ca.gov/datasets/CALFIRE-Forestry::california-fire-perimeters-all-1/explore 
+    - URL: [https://gis.data.ca.gov/datasets/CALFIRE-Forestry::california-fire-perimeters-all-1/explore](https://gis.data.ca.gov/datasets/CALFIRE-Forestry::california-fire-perimeters-all-1/explore)
     - `` ref_title = “california_fire_perimeters_all” ``
     - Note: Users can download this dataset via the provided link; select “download” and the “ShapeFile” option. 
 
@@ -107,14 +107,14 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
     - The user provides a function that they want to maximize or minimize. The program will recursively apply the shapely.simplify(threshold) function until the threshold is equivalent to near 0. The recursion initiates on a user start threshold, and increments down by a user-defined step size. The program returns the best value produced along with the corresponding threshold value which reproduces the best value.
     - Calling procedure: with an OutputCalculation object (e.g. my_output), call with a calculation method (function to optimize), lower preference indicator (True if a lower value is considered top performance, false if higher value is considered top performance), and a base tolerance (the threshold value fed into the shapely simplify function). The function returns a list of of threshold values which optimized the simplification, each entry corresponds to a FEDS and Reference pair.
 
-```
-best_threshold_collection = my_output.init_best_simplify(
-                       calc_method, 
-                       lowerPref, 
-                       base_tolerance
-                      )
+    ```
+    best_threshold_collection = my_output.init_best_simplify(
+                           calc_method, 
+                           lowerPref, 
+                           base_tolerance
+                          )
 
-```
+    ```
 
 - Persistent Output
     - In addition to the interactive iPython notebook environment, the user provides and output path and file format. The program then saves the calculation dictionary result into the specified file format.
@@ -122,35 +122,35 @@ best_threshold_collection = my_output.init_best_simplify(
         - CSV
     - Example in demo input section (see any file in the ``/demo`` directory):
     
-```
-name_for_output_file = "test_run"
-output_format = "csv"
-user_path = "/projects/my-public-bucket/VEDA-PEC/results"
-output_maap_url = f"{user_path}/{name_for_output_file}.{output_format}"
-…
-my_output = OutputCalculation(
-                feds_firenrt,
-                nifc_search,
-                output_format, 
-                output_maap_url,
-                day_search_range,
-                print_on,
-                plot_on
-                )
+        ```
+        name_for_output_file = "test_run"
+        output_format = "csv"
+        user_path = "/projects/my-public-bucket/VEDA-PEC/results"
+        output_maap_url = f"{user_path}/{name_for_output_file}.{output_format}"
+        …
+        my_output = OutputCalculation(
+                        feds_firenrt,
+                        nifc_search,
+                        output_format, 
+                        output_maap_url,
+                        day_search_range,
+                        print_on,
+                        plot_on
+                        )
 
-```
+        ```
 - TIF Analysis
     - With the resulting ``OutputCalculation`` object, users can call the method ``tif_analysis`` which returns a calculated value by taking each pair of FEDS and Reference, masking the TIF with the symmetric difference of the FEDS polygon over the reference polygon.
     - This function accepts three arguments, two of which are mandatory: tif_path (path to TIF file as a string), req_calc ( a string from the following choices: ``"MEDIAN", “MEAN”, “UNIQUE”``), date_restrict (optional, an integer indicated how many days absolute difference between FEDS and Reference are permitted). 
     - Example call: 
-```
-get_median = my_output.tif_analysis("/projects/my-public-bucket/tif_files/slopeLF/LC20_SlpD_220.tif", "MEDIAN", 100)
+    ```
+    get_median = my_output.tif_analysis("/projects/my-public-bucket/tif_files/slopeLF/LC20_SlpD_220.tif", "MEDIAN", 100)
 
-```
+    ```
 
 ## Directory and File Structure
 
-As of version 1.0, the FEDS-PEC project consists of the single repository ``feds-benchmarking`` (URL: https://github.com/ksharonin/feds-benchmarking). The repository consists of the following directories and files on the main branch, FEDS-PEC-Protected:
+As of version 1.0, the FEDS-PEC project consists of the single repository ``feds-benchmarking`` (URL: [https://github.com/ksharonin/feds-benchmarking] (https://github.com/ksharonin/feds-benchmarking)). The repository consists of the following directories and files on the main branch, FEDS-PEC-Protected:
 
 - Files in Main Directory
     - ``README.md``: the key document describing installation and configuration instructions. Contains detailed information on inputs and outputs.
@@ -201,14 +201,28 @@ The FEDS-PEC README.md provides detailed instructions for users.
 
 ## Reporting Issues and Submitting Feedback
 
-For any bug and issues, users are encouraged to open a github issue on the official FEDS-PEC github. URL: https://github.com/ksharonin/feds-benchmarking/issues 
+For any bug and issues, users are encouraged to open a github issue on the official FEDS-PEC github. URL: [https://github.com/ksharonin/feds-benchmarking/issues](https://github.com/ksharonin/feds-benchmarking/issues)
 
 # Research Applications: Tentative Results with 2018-2021 United States FEDS VS. NIFC Archive
 
 To demonstrate the potential research application of FEDS-PEC, the notebook ``US_2018_TO_2021_ANALYSIS_RUN.ipynb`` was run to produce CSV output files, each of which was consolidated into the result Table 1.
 This notebook compares FEDS large fire archives API dataset [Link/number to citation] against the NIFC InterAgencyFirePerimeterHistory All Years View dataset [Link/number to citation] from January 2018 to December 2021 inclusive. The notebook was run on multiple time intervals which compose the 2018 to 2021 range due to the FEDS API limited to 9000 outputs per run. The notebook performs the standard FEDS-PEC procedure: for each FEDS-PEC match via temporal and geographical matching, a pair is formed. For every pair, FEDS-PEC calculations the ratio, accuracy, precision, recall, IOU, F1, and Symmetric Ratio.
 
-[TODO- finish analysis, insert table, insert citation]
+[TODO- finish analysis, insert citation]
+
+| Absolute Day Difference | Number of FEDS/Reference Pairs | Median Ratio | Median Accuracy | Median Precision | Median Recall | Median IOU | Median F1 | Median Symmetric Ratio (FEDS - Reference) |
+|-------------------------|--------------------------------|--------------|------------------|-------------------|--------------|------------|-----------|--------------------------------------------|
+|           0             |               4                |    0.876     |      0.821       |       0.766       |     0.671     |    0.23    |   0.445   |                0.737                       |
+|           1             |               15               |    1.046     |      0.673       |       0.798       |     0.646     |   0.347    |   0.571   |                0.889                       |
+|           2             |               8                |    0.966     |      0.834       |       0.713       |     0.626     |   0.312    |   0.653   |                0.602                       |
+|           3             |               9                |    0.615     |      0.591       |       0.862       |     0.485     |   0.304    |   0.619   |                0.597                       |
+|           4             |               10               |    0.967     |      1.057       |       0.787       |     0.766     |   0.431    |   0.779   |                0.435                       |
+|           5             |               6                |    0.88      |      0.737       |       0.677       |     0.6       |   0.191    |   0.509   |                0.807                       |
+|           6             |               8                |    1.216     |      0.794       |       0.763       |     0.867     |   0.329    |   0.631   |                0.552                       |
+|           7             |               7                |    0.579     |      0.576       |       0.804       |     0.485     |   0.09     |   0.181   |                0.924                       |
+|           8+            |               132              |    0.974     |      0.703       |       0.774       |     0.612     |   0.115    |   0.236   |                0.944                       |
+
+[TODO]
 
 # Acknowledgements
 
