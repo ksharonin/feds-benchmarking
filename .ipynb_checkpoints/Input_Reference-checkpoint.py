@@ -10,12 +10,16 @@ import logging
 import requests
 import pandas as pd
 import geopandas as gpd
+import fsspec
+
 from pyproj import CRS
 from owslib.ogcapi.features import Features
 import geopandas as gpd
 import datetime
 from datetime import timedelta
 from functools import singledispatch
+from botocore.config import Config
+
 
 pd.set_option('display.max_columns',None)
 
@@ -38,7 +42,7 @@ class InputReference():
     # PREDEFINED AGENCY URLS
     URL_MAPS = { 
         "InterAgencyFirePerimeterHistory_All_Years_View": ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/InterAgencyFirePerimeterHistory_All_Years_View/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
-        "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View": ["/projects/shared-buckets/ksharonin/Latest_Interagency_Fire_Perimeters", "shp_local", 's3://maap-ops-workspace/shared/ksharonin/Latest_Interagency_Fire_Perimeters/InterAgencyFirePerimeterHistory_All_Years_View.shp'],
+        "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View": ["/projects/shared-buckets/ksharonin/Latest_Interagency_Fire_Perimeters", "shp_local", 's3://maap-ops-workspace/shared/ksharonin/Latest_Interagency_Fire_Perimeters/Latest_Interagency_Fire_Perimeters.json'],
         # "WFIGS_Interagency_Fire_Perimeters": [ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
             "WFIGS_current_interagency_fire_perimeters" : ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson" , "arc_gis_online"],
             # "current_wildland_fire_incident_locations" :[ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
@@ -156,13 +160,16 @@ class InputReference():
         """
         try:
             df = gpd.read_file(self._ds_url)
-        except Exception as generic_err:
+        except Exception as e:
             pass
         try:
-            # s3 + gpd read assuming structure contains info, else fail
-            df = gpd.read_file(InputReference.URL_MAPS[self._title][2])
-        except Exception as generic_err:
-            logging.error(f"ERR: unable to read local shp from url: {self._ds_url}, produced error: {generic_err}")
+            fs = fsspec.filesystem("s3")
+            with fs.open(InputReference.URL_MAPS[self._title][2]) as f:
+                df = gpd.GeoDataFrame.from_file(f)
+            
+            # df = gpd.read_file(InputReference.URL_MAPS[self._title][2], config=config)
+        except IOError as io_err:
+            logging.error(f"ERR: unable to read local shp from url: {self._ds_url} and {InputReference.URL_MAPS[self._title][2]}, produced error: {io_err}")
             sys.exit()
         
         # filter based on predfined conds 
