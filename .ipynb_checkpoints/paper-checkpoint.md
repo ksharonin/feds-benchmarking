@@ -30,7 +30,7 @@ Overall, FEDS-PEC optimizes evaluation processes, empowering researchers and ana
 
 # Statement of need
 
-Over the past two decades, wildfires in the Western U.S. have increased in severity, frequency, and size (@dennison_large_2014, @weber_spatiotemporal_2020). Paired with the expansion of the wildland-urban interface (@radeloff_rapid_2018, @hammer_wildlandurban_2007), estimated national wildfire damage costs on an annualized basis range from $63.5 billion to $285.0 billion (@thomas_costs_2017). In addition, between 1901-2011, 674 civilian wildfire fatalities occurred in North America (@manzello_wildfires_2020). California wildfires have claimed 150 lives over the past 5 years alone [CAL FIRE top 20] and over 30% of total U.S. wildland firefighter fatalities from 1910-2010 @manzello_wildfires_2020.
+Over the past two decades, wildfires in the Western U.S. have increased in severity, frequency, and size (@dennison_large_2014, @weber_spatiotemporal_2020). Paired with the expansion of the wildland-urban interface (@radeloff_rapid_2018, @hammer_wildlandurban_2007), estimated national wildfire damage costs on an annualized basis range from $63.5 billion to $285.0 billion (@thomas_costs_2017). In addition, between 1901-2011, 674 civilian wildfire fatalities occurred in North America (@manzello_wildfires_2020). California wildfires have claimed 150 lives over the past 5 years alone (@porter_2020_2020) and over 30% of total U.S. wildland firefighter fatalities from 1910-2010 (@manzello_wildfires_2020).
 
 With the growing risk to property and livelihood in the U.S., precise and efficient methods of tracking active fire spread are critical for supporting near real-time firefighting response and wildfire management decision-making. Several map-making methods are practiced by firefighting agencies to track fire size and location. Primary methods include GPS-walking, GPS flight, and infrared image interpretation (@noauthor_national_nodate). The latter method, infrared imaging (IR), is one of the most widely demanded due to daily data delivery for routine briefings and synoptic coverage; between 2013 and 2017, yearly IR requests for the USDA Forest Service’s National Infrared Operations Program (NIROPS) increased from about 1.4k to just over 3.0k [USFS NIROPS Poster]. However, aerial infrared imaging methods involve several acquisition challenges, including cost, sensor operation restrictions, limited ability to meet coverage demand, and latency.
 Among NASA’s existing projects and tools, the development of thermal remote-sensing via satellites stands as a major potential augmentation to wildfire operations and mapping. The Moderate Resolution Imaging Spectroradiometer (MODIS) aboard the Aqua and Terra satellites, and the Visible Infrared Imaging Radiometer Suite (VIIRS) aboard S-NPP and NOAA 20 (formally known as JPSS-1), represent the primary tools for NASA’s wildfire remote-sensing initiative.
@@ -107,6 +107,7 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
     - The user provides a function that they want to maximize or minimize. The program will recursively apply the shapely.simplify(threshold) function until the threshold is equivalent to near 0. The recursion initiates on a user start threshold, and increments down by a user-defined step size. The program returns the best value produced along with the corresponding threshold value which reproduces the best value.
     - Calling procedure: with an OutputCalculation object (e.g. my_output), call with a calculation method (function to optimize), lower preference indicator (True if a lower value is considered top performance, false if higher value is considered top performance), and a base tolerance (the threshold value fed into the shapely simplify function). The function returns a list of of threshold values which optimized the simplification, each entry corresponds to a FEDS and Reference pair.
 
+
     ```
     best_threshold_collection = my_output.init_best_simplify(
                            calc_method, 
@@ -116,11 +117,13 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
 
     ```
 
+
 - Persistent Output
     - In addition to the interactive iPython notebook environment, the user provides and output path and file format. The program then saves the calculation dictionary result into the specified file format.
     - Supported file formats
         - CSV
     - Example in demo input section (see any file in the ``/demo`` directory):
+    
     
         ```
         name_for_output_file = "test_run"
@@ -139,10 +142,13 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
                         )
 
         ```
+        
 - TIF Analysis
     - With the resulting ``OutputCalculation`` object, users can call the method ``tif_analysis`` which returns a calculated value by taking each pair of FEDS and Reference, masking the TIF with the symmetric difference of the FEDS polygon over the reference polygon.
     - This function accepts three arguments, two of which are mandatory: tif_path (path to TIF file as a string), req_calc ( a string from the following choices: ``"MEDIAN", “MEAN”, “UNIQUE”``), date_restrict (optional, an integer indicated how many days absolute difference between FEDS and Reference are permitted). 
     - Example call: 
+    
+    
     ```
     get_median = my_output.tif_analysis("/projects/my-public-bucket/tif_files/slopeLF/LC20_SlpD_220.tif", "MEDIAN", 100)
 
@@ -193,7 +199,7 @@ All calculation formulas can be viewed in `Output_Calculation.py` as python meth
 
 ## Logic and Workflow
 
-![FEDS-PEC Geo-Time Matcher Logic Diagram](images/FEDS_PEC_Logic.drawio (2).png){ height=2600px }
+![FEDS-PEC Geo-Time Matcher Logic Diagram](images/FEDS_PEC_Logic.drawio (2).png){ height=2100px }
 
 ## User Set-up Guide
 
@@ -203,10 +209,10 @@ The FEDS-PEC README.md provides detailed instructions for users.
 
 For any bug and issues, users are encouraged to open a github issue on the official FEDS-PEC github. URL: [https://github.com/ksharonin/feds-benchmarking/issues](https://github.com/ksharonin/feds-benchmarking/issues)
 
-# Research Applications: Tentative Results with 2018-2021 United States FEDS VS. NIFC Archive
+# Research Applications: Tentative Results with 2018-2021 United States FEDS Perimeter Archive VS. NIFC InterAgencyFirePerimeterHistory All Years View
 
 To demonstrate the potential research application of FEDS-PEC, the notebook ``US_2018_TO_2021_ANALYSIS_RUN.ipynb`` was run to produce CSV output files, each of which was consolidated into the result Table 1.
-This notebook compares FEDS large fire archives API dataset [Link/number to citation] against the NIFC InterAgencyFirePerimeterHistory All Years View dataset [Link/number to citation] from January 2018 to December 2021 inclusive. The notebook was run on multiple time intervals which compose the 2018 to 2021 range due to the FEDS API limited to 9000 outputs per run. The notebook performs the standard FEDS-PEC procedure: for each FEDS-PEC match via temporal and geographical matching, a pair is formed. For every pair, FEDS-PEC calculations the ratio, accuracy, precision, recall, IOU, F1, and Symmetric Ratio.
+This notebook compares FEDS large fire archives API dataset [Link/number to citation] against the NIFC InterAgencyFirePerimeterHistory All Years View dataset (@signell_veda_2023) from January 2018 to December 2021 inclusive. The notebook was run on multiple time intervals which compose the 2018 to 2021 range due to the FEDS API limited to 9000 outputs per run. The notebook performs the standard FEDS-PEC procedure: for each FEDS-PEC match via temporal and geographical matching, a pair is formed. For every pair, FEDS-PEC calculations the ratio, accuracy, precision, recall, IOU, F1, and Symmetric Ratio.
 
 [TODO- finish analysis, insert citation]
 
@@ -221,6 +227,9 @@ This notebook compares FEDS large fire archives API dataset [Link/number to cita
 |           6             |               8                |    1.216     |      0.794       |       0.763       |     0.867     |   0.329    |   0.631   |                0.552                       |
 |           7             |               7                |    0.579     |      0.576       |       0.804       |     0.485     |   0.09     |   0.181   |                0.924                       |
 |           8+            |               132              |    0.974     |      0.703       |       0.774       |     0.612     |   0.115    |   0.236   |                0.944                       |
+
+
+## Tenative Results Discussion
 
 [TODO]
 
