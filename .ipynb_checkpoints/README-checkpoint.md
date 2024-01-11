@@ -98,14 +98,14 @@ This section describes inputs for FEDS and reference datasets and acceptable val
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/InterAgencyFirePerimeterHistory_All_Years_View/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson
             - Update frequency: every 5 minutes
-            - Time period covered: 1909 - Present
+            - Time period covered: 1909 - 2021
             - Geospatial coverage: United States
         - `"Downloaded_InterAgencyFirePerimeterHistory_All_Years_View`: 
             - A **static** shp datset containing all fire perimeters up to 2023 documented by the National Interagency Fire Center (NIFC) for the United States. Provided as a backup for users unable to access ArcGIS services at time of running FEDS-PEC.
             - Agency: National Interagency Fire Center (NIFC)
             - Source: https://data-nifc.opendata.arcgis.com/datasets/nifc::interagencyfireperimeterhistory-all-years-view/explore?location=32.468087%2C-122.087025%2C3.89 
             - Update frequency: one time/static, downloaded to maap directory once by author
-            - Time period covered: 1909 - 2023
+            - Time period covered: 1909 - 2021
             - Geospatial coverage: United States
         - `"WFIGS_current_interagency_fire_perimeters"`: 
             - A dynamic shp dataset containing current wildfire perimeters documented by  by the National Interagency Fire Center (NIFC) for the United States; program activately queries the ArcGIS online source

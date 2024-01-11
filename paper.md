@@ -70,18 +70,21 @@ FEDS-PEC requires user inputs of time interval, region, and dataset settings to 
 
 ## Supported APIs for Reference Fire Perimeters
 - NIFC Open Data: InterAgencyFirePerimeterHistory All Years View
-    - Description:
+    - Description: The layer encompasses the final fire perimeter datasets of the USDA Forest Service, US Department of Interior Bureau of Land Management, Bureau of Indian Affairs, Fish and Wildlife Service, and National Park Service, the Alaska Interagency Fire Center, CalFire, and WFIGS History. Requirements for fire perimeter inclusion, such as minimum acreage requirements, are set by the contributing agencies. Geospatial coverage: United States. Time period covered: 1909 - 2021.
     - URL: [https://data-nifc.opendata.arcgis.com/maps/interagencyfireperimeterhistory-all-years-view](https://data-nifc.opendata.arcgis.com/maps/interagencyfireperimeterhistory-all-years-view)
     - `` ref_title = “InterAgencyFirePerimeterHistory_All_Years_View” ``
     - Note: This dataset has been predownloaded into a MAAP directory. Should users have access to MAAP and interest in a stable static version of the dataset, use `` ref_title = “Downloaded_InterAgencyFirePerimeterHistory_All_Years_View” ``
     - Note: Users can download this dataset via the provided link; select “download” and the “ShapeFile” option. 
 - NIFC Open Data: WFIGS Current Interagency Fire Perimeters
-    - Description:
+    - Description: Best available perimeters for recent and ongoing wildland fires in the United States hosted by The Wildland Fire Interagency Geospatial Services (WFIGS) Group which provides authoritative geospatial data products under the interagency Wildland Fire Data Program. Perimeters are not available for every incident. Geospatial coverage: United States. Time period covered depends on fire size: Records are removed from this service under the following conditions:
+        - If the fire size is less than 10 acres (Size Class A or B) and fire information has not been updated in more than 3 days. 
+        - If the fire size is between 10 and 100 acres (Size Class C) and fire information hasn't been updated in more than 8 days. 
+        - If the fire size is larger than 100 acres (Size Class D-L) but fire information hasn't been updated in more than 14 days.
     - URL: [https://data-nifc.opendata.arcgis.com/maps/wfigs-current-interagency-fire-perimeters](https://data-nifc.opendata.arcgis.com/maps/wfigs-current-interagency-fire-perimeters)
     - `` ref_title = “WFIGS_current_interagency_fire_perimeters” ``
     - Note: Users can download this dataset via the provided link; select “download” and the “ShapeFile” option. 
 - California Department of Forestry and Fire Protection: California Fire Perimeters (all)
-    - Description:
+    - Description: CAL FIRE Wildfire Perimeters and Prescribed Burns. The service includes layers that are data subsets symbolized by size and year. Geospatial coverage: California. Time period covered: 1878 - Present.
     - URL: [https://gis.data.ca.gov/datasets/CALFIRE-Forestry::california-fire-perimeters-all-1/explore](https://gis.data.ca.gov/datasets/CALFIRE-Forestry::california-fire-perimeters-all-1/explore)
     - `` ref_title = “california_fire_perimeters_all” ``
     - Note: Users can download this dataset via the provided link; select “download” and the “ShapeFile” option. 

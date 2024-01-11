@@ -173,7 +173,7 @@ class InputReference():
             sys.exit()
         
         # filter based on predfined conds 
-        if self._title == "nifc_interagency_history_local" or self._title == "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View":
+        if self._title == "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View" or self._title == "InterAgencyFirePerimeterHistory_All_Years_View":
             df = self.filter_nifc_interagency_history_local(df)
         elif self._title == "WFIGS_current_interagency_fire_perimeters":
             df = self.filter_WFIGS_current_interagency_fire_perimeters(df)
