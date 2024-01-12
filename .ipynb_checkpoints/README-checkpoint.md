@@ -40,6 +40,7 @@ Steps to install and use FEDS-PEC:
     - `git clone` the FEDS-PEC git repo
     - `cd` into the FEDS-PEC git repo
     - `conda env create -f "env-feds.yml" -p "../env-feds"`
+        - **NOTE FOR MAAP USERS:** MAAP contains memory limitations on certain directories; if encountering installation issues, check the installation area of `env-feds`. Users may need to change the level of install (i.e. modify `"../env-feds"` to `"../../env-feds"`)
     - `source activate "../env-feds"`
 
 2. **Notebook Setup:** Edit or make a copy of the `BLANK_FEDS_Outline.ipynb` located in the `blank` directory.
