@@ -30,7 +30,7 @@ bibliography: paper.bib
 
 # Summary
 
-The Fire Event Data Suite-Polygon Evaluation and Comparison (FEDS-PEC) is a specialized Python module tailored to accelerate numerical comparison of fire perimeter products derived from different mapping methods.. Currently, the module is catered to compare NASA’s FEDS fire perimeter product against fire perimeters from key stakeholder agencies (e.g. NIFC, CALFIRE, and WFIGS) along with user-inputted datasets. Ultimately FEDS-PEC is aimed at generating long-term performance assessments and assisting NASA researchers in identifying areas of needed improvement in the FEDS algorithm. Although specialized for FEDS, users can freely adapt the library for custom perimeter versus perimeter comparisons, enabling wildfire research. FEDS-PEC’s core functionality enables seamless access to multiple APIs and datasets along with numerical analysis. This is accomplished by providing template notebooks with which users can compare different databases of fire perimeters from a common syntax. Inputs include datasets of choice, region/bounding box, start time, end time, day search range and filters. The library visits the requested datasets, applies the region and search times, and performs diverse calculations including ratio, accuracy, precision, recall, IOU, F1 score, and symmetric ratio difference. Finally, FEDS-PEC returns the polygon metadata and corresponding calculations. Users can interact with the output by plotting the identified polygons and analyzing calculated values.
+The Fire Event Data Suite-Polygon Evaluation and Comparison (FEDS-PEC) is a specialized Python module tailored to accelerate numerical comparison of fire perimeter products derived from different mapping methods. Currently, the module is catered to compare NASA’s FEDS fire perimeter product, generated from an algorithm that uses satellite observations, against fire perimeters from key stakeholder agencies (e.g. NIFC, CALFIRE, and WFIGS) along with user-inputted datasets. Ultimately FEDS-PEC is aimed at generating long-term performance assessments and assisting NASA researchers in identifying areas of needed improvement in the FEDS algorithm. Although specialized for FEDS, users can freely adapt the library for custom perimeter versus perimeter comparisons, enabling wildfire research. FEDS-PEC’s core functionality enables seamless access to multiple APIs and datasets along with numerical analysis. This is accomplished by providing template notebooks with which users can compare different databases of fire perimeters from a common syntax. Inputs include datasets of choice, region/bounding box, start time, end time, day search range and filters. The library visits the requested datasets, applies the region and search times, and performs diverse calculations including ratio, accuracy, precision, recall, IOU, F1 score, and symmetric ratio difference. Finally, FEDS-PEC returns the polygon metadata and corresponding calculations. Users can interact with the output by plotting the identified polygons and analyzing calculated values.
 
 Overall, FEDS-PEC optimizes evaluation processes, empowering researchers and analysts to efficiently assess perimeter geospatial data without reinventing evaluation solutions. Designed for compatibility with Jupyter Notebooks and offering flexible options, FEDS-PEC strives to bridge the gap between the wildfire research community and firefighting agencies by making the evaluation of fire-perimeter products easy, accessible, and frequent.
 
@@ -60,7 +60,7 @@ Importantly, FEDS-PEC  is not a general spatial calculation package. Instead, it
 
 # FEDS-PEC Project
 
-![Sample result plot comparing a FEDS archive perimeter to a NIFC Archive Reference perimeter from US_2018_TO_2021_ANALYSIS_RUN.ipynb](images/finalized_with_legend_FEDS.jpg)
+![Sample result plot comparing a FEDS archive perimeter to a NIFC Archive Reference. Perimeter generated via the plot module. See US_2018_TO_2021_ANALYSIS_RUN.ipynb in demo directory for above figure.](images/finalized_with_legend_FEDS.jpg)
 
 ## Overview
 
@@ -103,17 +103,17 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
 
 ## Key Features 
 
-- Geo-Time Matcher: 
+- Geo-Time Matching: 
     - Using user inputs, Match-Maker will access data sources and iterate between a specified time interval and geographic region. For the interval and region, it will pull all FEDS instances. Then for each FEDS instance, it intersects with the reference dataset and inspects the difference in time. If there is an intersection and the two polygons are within day_search_range days of each other, it will declare a match and report the indices of the respective polygons. The indices are applied directly to the objects via `` InputFeds._polygons `` and `` InputReference._polygons ``
     - Algorithm will still output results of matches that fall outside of `` day_search_range ``, but will indicate with verbose logging.
 
-- Calculation-Analyzer:
+- Calculation-Analyzing:
     - If a successful match pair is produced, the Match-Maker calls on a series of calculation functions (ratio, accuracy, precision, recall, IOU, F1, symmetric ratio difference) and prints out the resulting values. 
 
-- Plotter:
+- Plotting:
     - The program automatically generates plots for all FEDS/Reference pairs. Plot titles indicate FEDS and Reference timestamps, along with axes with latitude/longitude information in the user specified coordinate reference system.
 
-- Incident-Labeler:
+- Incident-Labeling:
     - If a successful match pair is produced, the Incident-Labeler will assign an incident name to the FEDS polygon using a valid incident name column. The following column names are recognized as valid incident label column titles: `` ‘INCIDENT’, ‘poly_IncidentName’, ‘FIRE_NAME’ ``. For example, the NIFC archive dataset uses the column title INCIDENT to denote a wildfire incident name. If no valid column is found, FEDS polygons will remain nameless.
 
 - Function-Optimal Polygon Refinement:
