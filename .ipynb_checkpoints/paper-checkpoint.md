@@ -39,16 +39,16 @@ Overall, FEDS-PEC optimizes evaluation processes, empowering researchers and ana
 
 Over the past two decades, wildfires in the Western U.S. have increased in severity, frequency, and size (@dennison_large_2014, @weber_spatiotemporal_2020). Paired with the expansion of the wildland-urban interface (@radeloff_rapid_2018, @hammer_wildlandurban_2007), estimated national wildfire damage costs on an annualized basis range from $63.5 billion to $285.0 billion (@thomas_costs_2017). In addition, between 1901-2011, 674 civilian wildfire fatalities occurred in North America (@manzello_wildfires_2020). In 2020 alone, California wildfires claimed 45 lives (@porter_2020_2020).
 
-With the growing risk to property and livelihood in the U.S., precise and efficient methods of tracking active fire spread are critical for supporting near real-time firefighting response and wildfire management decision-making. Several map-making methods are practiced by firefighting agencies to track fire size and location. Primary methods include GPS-walking, GPS flight, and infrared image interpretation (@noauthor_nwcg_2014). The latter method, infrared imaging (IR), is one of the most widely demanded due to daily data delivery for routine briefings and synoptic coverage; between 2013 and 2017, yearly IR requests for the USDA Forest Service’s National Infrared Operations Program (NIROPS) increased from about 1.4k to just over 3.0k (Figure 1, @mellin_2021_nodate). However, aerial infrared imaging methods involve several acquisition challenges, including cost, sensor operation restrictions, limited ability to meet coverage demand, and latency.
+With the growing risk to property and livelihood in the U.S., precise and efficient methods of tracking active fire spread are critical for supporting near real-time firefighting response and wildfire management decision-making. Several map-making methods are practiced by firefighting agencies to track fire size and location. Primary methods include GPS-walking, GPS flight, and infrared image interpretation (@noauthor_nwcg_2014). The latter method, infrared imaging (IR), is one of the most widely demanded due to daily data delivery for routine briefings and synoptic coverage; between 2013 and 2017, yearly IR requests for the USDA Forest Service’s National Infrared Operations Program (NIROPS) increased from about 1.4k to just over 3.0k (Figure 1, @mellin_2021_2021). However, aerial infrared imaging methods involve several acquisition challenges, including cost, sensor operation restrictions, limited ability to meet coverage demand, and latency.
 
-![2006-2021 NIROPS Aircraft Infrared Imaging Resources Requests by Year, figure sourced from @mellin_2021_nodate](images/NIROP_requests_USFS.jpg)
+![2006-2021 NIROPS Aircraft Infrared Imaging Resources Requests by Year, figure sourced from @mellin_2021_2021](images/NIROP_requests_USFS.jpg)
 
 Among NASA’s existing projects and tools, the development of thermal remote-sensing via satellites stands as a major potential augmentation to wildfire operations and mapping. The Moderate Resolution Imaging Spectroradiometer (MODIS) aboard the Aqua and Terra satellites, Geostationary Operational and Environmental Satellites (GOES), and the Visible Infrared Imaging Radiometer Suite (VIIRS) aboard S-NPP and NOAA 20 (formally known as JPSS-1), represent fundamental tools for NASA’s wildfire remote-sensing capabilities.
 
 Satellite observations are harnessed to generate fire perimeter products. One leading perimeter algorithm is the FEDS Fire Perimeters led by Yang Chen (@chen_california_2022). This system employs automated processes to aggregate and analyze VIIRS instrument data every 12 hours, identifying active fire pixels and delineating fire perimeters. Using an alpha shape algorithm, it integrates these data points, allowing for a comprehensive and dynamic tracking of fire attributes and shapes over time, facilitating near real-time monitoring of fire progression and characteristics within a region.
 The integration of satellite products can address several issues faced by aircraft IR missions: satellites are not manned and therefore do not pose a safety risk when deployed, satellites do not impede in Fire Traffic Area, there is a standard temporal resolution for every instrument, tools can provide real-time data, data processing, interpretation, and access can be handled by programs such as NASA FIRMS, there is a fixed cost associated with only creation and maintenance of the satellite tool, with nationwide to global coverage potential.
 
-However, the integration of satellite observations has been limited due to the various issues cited by United State Forest Service (USFS), including resolution scale (i.e. 2 km for MODIS), false positives, limited swath width, analysis support, latency, post-processing of data, and temporal resolution (@olivia_proceedings_nodate, @usda_forest_service_fire_2020). Overall, USFS deems satellites most appropriate for strategic intelligence rather than tactical incident awareness and assessment (IAA), where IAA focuses on detailed intelligence on “fast moving dynamic fires” and strategic focuses on a wider operating picture. Most importantly, a key goal of the USFS is to: “Continue to evaluate satellite detection and mapping capability” (@usda_forest_service_fire_2020).
+However, the integration of satellite observations has been limited due to the various issues cited by United State Forest Service (USFS), including resolution scale (i.e. 2 km for MODIS), false positives, limited swath width, analysis support, latency, post-processing of data, and temporal resolution (@olivia_near_2015, @usda_forest_service_fire_2020). Overall, USFS deems satellites most appropriate for strategic intelligence rather than tactical incident awareness and assessment (IAA), where IAA focuses on detailed intelligence on “fast moving dynamic fires” and strategic focuses on a wider operating picture. Most importantly, a key goal of the USFS is to: “Continue to evaluate satellite detection and mapping capability” (@usda_forest_service_fire_2020).
 
 Despite various challenges, emerging research and products continue to improve and demonstrate the strength of satellite imagery for wildfire applications. To demonstrate the robustness of satellite perimeter products and support firefighting agencies, there is a need to numerically compare satellite products with current agency mapping methods. By directly overlaying sources, both researchers and firefighting agencies can objectively assess and visualize the performance of different fire-measurement techniques. Most researchers generate their own scripts to perform these calculations. FEDS-PEC is designed to reduce redundancy and provide researchers with a quick-start toolkit to compare fire perimeter datasets. By uplifting researcher efficiency, the scientific community can more effectively collaborate with firefighting/stakeholder agencies to identify strengths, weaknesses, and opportunities for improvement.
 
@@ -56,7 +56,7 @@ Despite various challenges, emerging research and products continue to improve a
 
 As of January 2024, to the authors’ best knowledge no other open-source comparison library for fire perimeters  exists. Of note are many spatial tools and packages exist for calculating metrics of spatial matching. Package examples include PySAL (@rey_pysal_2007), Shapely (@gillies_shapely_2023), and Geopandas (@bossche_geopandasgeopandas_2024). General GIS tool examples include ArcGIS Pro and QGIS.
 
-Importantly, FEDS-PEC  is not a general spatial calculation package. Instead, it focuses on automating three problems common to fire science: 1) Providing access to different datasets, 2) aligning datasets, or identifying which perimeters from different datasets are likely describing the same fire, even if the perimeters may be from different times, shapes, and resolutions, 3) calculating the spatial agreement between perimeters that represent the same fire. While motivated by fire-research, these three problems may emerge in other fields where events are described by polygons, such as storm-tracking, plume tracking, and landslides.
+Importantly, FEDS-PEC is not a general spatial calculation package. Instead, it focuses on automating three problems common to fire science: 1) Providing access to different shapefile datasets, each having a unique access format, in a single enviornment 2) aligning shapefile data , or identifying which perimeters from different shapefiles are likely describing the same fire, even if the perimeters may be from different times, shapes, and resolutions, 3) calculating the spatial agreement between perimeters that represent the same fire. While motivated by fire-research, these three problems may emerge in other fields where events are described by polygons, such as storm-tracking, plume tracking, and landslides. 
 
 # FEDS-PEC Project
 
@@ -212,7 +212,7 @@ All calculation formulas can be viewed in `Output_Calculation.py` as python meth
 
 ## Logic and Workflow
 
-![FEDS-PEC Geo-Time Matcher Logic Diagram](images/FEDS_PEC_Logic.drawio (2).png){ height=2500px }
+![FEDS-PEC Geo-Time Matching Logic Diagram](images/FEDS_PEC_Logic.drawio (2).png){ height=2500px }
 
 ## User Set-up Guide
 
@@ -227,18 +227,29 @@ For any bug and issues, users are encouraged to open a github issue on the offic
 To demonstrate the potential research application of FEDS-PEC, the notebook ``US_2018_TO_2021_ANALYSIS_RUN.ipynb`` was run to produce CSV output files, each of which was consolidated into the result Table 1.
 This notebook compares FEDS large fire archives API dataset [Link/number to citation] against the NIFC InterAgencyFirePerimeterHistory All Years View dataset (@signell_veda_2023) from January 2018 to December 2021 inclusive. The notebook was run on multiple time intervals which compose the 2018 to 2021 range due to the FEDS API limited to 9000 outputs per run. The notebook performs the standard FEDS-PEC procedure: for each FEDS-PEC match via temporal and geographical matching, a pair is formed. For every pair, FEDS-PEC calculates the ratio, accuracy, precision, recall, IOU, F1, and Symmetric Ratio.
 
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
 | Absolute Day Difference | Number of FEDS/Reference Pairs | Median Ratio | Median Accuracy | Median Precision | Median Recall | Median IOU | Median F1 | Median Symmetric Ratio (FEDS - Reference) |
-|-------------------------|--------------------------------|--------------|------------------|-------------------|--------------|------------|-----------|--------------------------------------------|
++:------------------------+:--------------------------------+:--------------+:------------------+:-------------------+:--------------+:------------+:-----------+:--------------------------------------------:+
 |           0             |               4                |    0.876     |      0.821       |       0.766       |     0.671     |    0.23    |   0.445   |                0.737                       |
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
 |           1             |               15               |    1.046     |      0.673       |       0.798       |     0.646     |   0.347    |   0.571   |                0.889                       |
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
 |           2             |               8                |    0.966     |      0.834       |       0.713       |     0.626     |   0.312    |   0.653   |                0.602                       |
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
 |           3             |               9                |    0.615     |      0.591       |       0.862       |     0.485     |   0.304    |   0.619   |                0.597                       |
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
 |           4             |               10               |    0.967     |      1.057       |       0.787       |     0.766     |   0.431    |   0.779   |                0.435                       |
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
 |           5             |               6                |    0.88      |      0.737       |       0.677       |     0.6       |   0.191    |   0.509   |                0.807                       |
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
 |           6             |               8                |    1.216     |      0.794       |       0.763       |     0.867     |   0.329    |   0.631   |                0.552                       |
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
 |           7             |               7                |    0.579     |      0.576       |       0.804       |     0.485     |   0.09     |   0.181   |                0.924                       |
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
 |           8+            |               132              |    0.974     |      0.703       |       0.774       |     0.612     |   0.115    |   0.236   |                0.944                       |
-[]{label="Table 1: 2018-2021 United States FEDS Perimeter Archive VS. NIFC InterAgencyFirePerimeterHistory All Years View Statistical Results, rounded to the third decimal place"}
++-------------------------+--------------------------------+--------------+------------------+-------------------+--------------+------------+-----------+--------------------------------------------+
+Table 1: 2018-2021 United States FEDS Perimeter Archive VS. NIFC InterAgencyFirePerimeterHistory All Years View Statistical Results, rounded to the third decimal place
+
 
 ## Discussion
 
@@ -251,12 +262,16 @@ However, it is important to note that the timestamps of the NIFC InterAgencyFire
 Overall, this type of summary would be useful for more thoroughly examining the perimeter accuracy and growth relationship with time in the future. 
 
 
-# Author contribution section:
+# Author Contribution
 
-Katrina Sharonin conceived of the project, designed and wrote software. Katrina Sharonin also wrote the JOSS paper and documentation. Tempest McCabe tested software and advised on project direction. 
+Katrina Sharonin conceived of the project, designed and wrote software. Katrina Sharonin also wrote the JOSS paper and documentation. Tempest McCabe tested software and advised on project direction. Yang Chen provided editorial assistance in refining the JOSS paper.
 
 # Acknowledgements
 
-Support for this project was provided by NASA's Earth Information System (EIS) Project, and the NASA Goddard Space Flight Center Pathways Program. 
+Support for this project was provided by NASA's Earth Information System (EIS) Project, and the NASA Goddard Space Flight Center (GSFC) Pathways Program. 
+
+For more information on the NASA EIS Project, visit: [https://eis.smce.nasa.gov/about.html](https://eis.smce.nasa.gov/about.html)
+
+For more information on the NASA GSFC Pathways Program, visit: [https://www.nasa.gov/careers/pathways/](https://www.nasa.gov/careers/pathways/)
 
 # References
