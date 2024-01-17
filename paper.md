@@ -60,7 +60,7 @@ Importantly, FEDS-PEC is not a general spatial calculation package. Instead, it 
 
 # FEDS-PEC Project
 
-![Sample result plot comparing a FEDS archive perimeter to a NIFC Archive Reference. Perimeter generated via the plot module. See US_2018_TO_2021_ANALYSIS_RUN.ipynb in demo directory for above figure.](images/finalized_with_legend_FEDS.jpg)
+![Sample result plot for 2020 Apple Fire, comparing a FEDS archive perimeter to a NIFC Archive Reference. Perimeter generated via the plot module. See US_2018_TO_2021_ANALYSIS_RUN.ipynb in demo directory for above figure.](images/finalized_with_legend_FEDS.jpg)
 
 ## Overview
 
@@ -104,8 +104,8 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
 ## Key Features 
 
 - Geo-Time Matching: 
-    - Using user inputs, Match-Maker will access data sources and iterate between a specified time interval and geographic region. For the interval and region, it will pull all FEDS instances. Then for each FEDS instance, it intersects with the reference dataset and inspects the difference in time. If there is an intersection and the two polygons are within day_search_range days of each other, it will declare a match and report the indices of the respective polygons. The indices are applied directly to the objects via `` InputFeds._polygons `` and `` InputReference._polygons ``
-    - Algorithm will still output results of matches that fall outside of `` day_search_range ``, but will indicate with verbose logging.
+    - Using user inputs, Match-Maker will access data sources and iterate between a specified time interval and geographic region. For the interval and region, it will pull all FEDS instances. Then for each FEDS instance, it intersects with the reference dataset and inspects the difference in time. If there is an intersection and the two polygons are within ``day_search_range`` days of each other, it will declare a match and report the indices of the respective polygons. The indices are applied directly to the objects via `` InputFeds._polygons `` and `` InputReference._polygons ``
+    - Algorithm will still output results of matches that fall outside of `` day_search_range ``, but will indicate with verbose logging so that users can inspect and decide on a manual basis if removing the match is appropriate.
 
 - Calculation-Analyzing:
     - If a successful match pair is produced, the Match-Maker calls on a series of calculation functions (ratio, accuracy, precision, recall, IOU, F1, symmetric ratio difference) and prints out the resulting values. 
@@ -117,8 +117,8 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
     - If a successful match pair is produced, the Incident-Labeler will assign an incident name to the FEDS polygon using a valid incident name column. The following column names are recognized as valid incident label column titles: `` ‘INCIDENT’, ‘poly_IncidentName’, ‘FIRE_NAME’ ``. For example, the NIFC archive dataset uses the column title INCIDENT to denote a wildfire incident name. If no valid column is found, FEDS polygons will remain nameless.
 
 - Function-Optimal Polygon Refinement:
-    - The user provides a function that they want to maximize or minimize. The program will recursively apply the shapely.simplify(threshold) function until the threshold is equivalent to near 0. The recursion initiates on a user start threshold, and increments down by a user-defined step size. The program returns the best value produced along with the corresponding threshold value which reproduces the best value.
-    - Calling procedure: with an OutputCalculation object (e.g. my_output), call with a calculation method (function to optimize), lower preference indicator (True if a lower value is considered top performance, false if higher value is considered top performance), and a base tolerance (the threshold value fed into the shapely simplify function). The function returns a list of of threshold values which optimized the simplification, each entry corresponds to a FEDS and Reference pair.
+    - The user provides a function that they want to maximize or minimize. The program will recursively apply the ``shapely.simplify(threshold)`` function until the threshold is equivalent to near 0. The recursion initiates on a user start threshold, and increments down by a user-defined step size. The program returns the best value produced along with the corresponding threshold value which reproduces the best value.
+    - Calling procedure: with an ``OutputCalculation`` object (e.g. ``my_output``), call with a calculation method (function to optimize), lower preference indicator (True if a lower value is considered top performance, false if higher value is considered top performance), and a base tolerance (the threshold value fed into the shapely simplify function). The function returns a list of of threshold values which optimized the simplification, each entry corresponds to a FEDS and Reference pair.
 
 
     ```
@@ -132,7 +132,7 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
 
 
 - Data Output
-    - In addition to the interactive iPython notebook environment, the user provides and output path and file format. The program then saves the calculation dictionary result into the specified file format.
+    - In addition to the interactive iPython notebook environment, the user provides and output path and file format. The program then saves the calculation dictionary result into the specified file format. See Table 1 for an example CSV output.
     - Supported file formats
         - CSV
     - Example in demo input section (see any file in the ``/demo`` directory):
@@ -155,7 +155,17 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
                         )
 
         ```
-        
+
+| feds_index | ref_index | incident_name | feds_timestamp       | ref_timestamp        | ratio        | accuracy     | precision    | recall       | iou          | f1           | symm_ratio   |
+|------------|-----------|----------------|----------------------|----------------------|--------------|--------------|--------------|--------------|--------------|--------------|--------------|
+| 1558       | 19923     | MAGPIE ROCK    | 2020-07-29 0:00:00  | 2020-08-01 0:00:00  | 0.7811726538 | 0.7387877804 | 0.8623409822 | 0.6736371936 | 0.4053874135 | 0.7563974128 | 0.4338982667 |
+| 2943       | 4582      | INDIA          | 2020-07-01 0:00:00  | 2020-06-14 0:00:00  | 13.77586371  | 0.7081779557 | 0.07226006338| 0.9954447846 | 0.0697058096 | 0.1347393025 | 12.78497414  |
+| 2012       | 4955      | PASS           | 2020-07-08 12:00:00 | 2020-07-01 0:00:00  | 0.5670971604 | 0.4906307374 | 0.8557050289 | 0.485267892  | 0.2893065893 | 0.619320747  | 0.5965613764 |
+| 1975       | 5039      | CREWS          | 2020-07-06 0:00:00  | 2020-07-15 0:00:00  | 0.9611804939 | 0.9157067751 | 0.8664553013 | 0.8328199344 | 0.5204158284 | 0.8493047295 | 0.2955406251 |
+| 876        | 19785     | Whitetail      | 2020-07-17 0:00:00  | 2020-06-08 0:00:00  | 0.9001698935 | 0.6982467041 | 0.058858206  | 0.05298238503| 0.02339167368| 0.05576594515| 1.794205123  |
+
+Table 1: Sample CSV output, sourced from notebook US_2018_TO_2021_ANALYSIS_RUN.ipynb. Notebook run pairs FEDS 2020 archive perimeters with NIFC InteragencyAllPerimeters 2020 archive matches. Table excludes polygon columns due to text length.
+
 - TIF Analysis
     - With the resulting ``OutputCalculation`` object, users can call the method ``tif_analysis`` which returns a calculated value by taking each pair of FEDS and Reference, masking the TIF with the symmetric difference of the FEDS polygon over the reference polygon.
     - This function accepts three arguments, two of which are mandatory: tif_path (path to TIF file as a string), req_calc ( a string from the following choices: ``"MEDIAN", “MEAN”, “UNIQUE”``), date_restrict (optional, an integer indicated how many days absolute difference between FEDS and Reference are permitted). 
@@ -169,7 +179,7 @@ FEDS-PEC does not currently support all publicly available APIs of fire perimete
 
 ## Directory and File Structure
 
-As of version 1.0.0, the FEDS-PEC project consists of the single repository ``feds-benchmarking`` (URL: [https://github.com/ksharonin/feds-benchmarking] (https://github.com/ksharonin/feds-benchmarking)). The repository consists of the following directories and files on the main branch, FEDS-PEC-Protected:
+As of version 1.0.0, the FEDS-PEC project consists of the single repository ``feds-benchmarking`` (URL: [https://github.com/ksharonin/feds-benchmarking](https://github.com/ksharonin/feds-benchmarking)). The repository consists of the following directories and files on the main branch, FEDS-PEC-Protected:
 
 - Files in Main Directory
     - ``README.md``: the key document describing installation and configuration instructions. Contains detailed information on inputs and outputs.
@@ -225,7 +235,7 @@ For any bug and issues, users are encouraged to open a github issue on the offic
 # Research Applications: 2018-2021 United States FEDS Perimeter Archive VS. NIFC InterAgencyFirePerimeterHistory All Years View
 
 To demonstrate the potential research application of FEDS-PEC, the notebook ``US_2018_TO_2021_ANALYSIS_RUN.ipynb`` was run to produce CSV output files, each of which was consolidated into the result Table 1.
-This notebook compares FEDS large fire archives API dataset [Link/number to citation] against the NIFC InterAgencyFirePerimeterHistory All Years View dataset (@signell_veda_2023) from January 2018 to December 2021 inclusive. The notebook was run on multiple time intervals which compose the 2018 to 2021 range due to the FEDS API limited to 9000 outputs per run. The notebook performs the standard FEDS-PEC procedure: for each FEDS-PEC match via temporal and geographical matching, a pair is formed. For every pair, FEDS-PEC calculates the ratio, accuracy, precision, recall, IOU, F1, and Symmetric Ratio.
+This notebook compares FEDS large fire archives API dataset (@signell_veda_2023 )against the [NIFC InterAgencyFirePerimeterHistory All Years View dataset] (https://data-nifc.opendata.arcgis.com/maps/interagencyfireperimeterhistory-all-years-view). from January 2018 to December 2021 inclusive. The notebook was run on multiple time intervals which compose the 2018 to 2021 range due to the FEDS API limited to 9000 outputs per run. The notebook performs the standard FEDS-PEC procedure: for each FEDS-PEC match via temporal and geographical matching, a pair is formed. For every pair, FEDS-PEC calculates the ratio, accuracy, precision, recall, IOU, F1, and Symmetric Ratio.
 
 | Absolute Day Difference | Number of FEDS/Reference Pairs | Median Ratio | Median Accuracy | Median Precision | Median Recall | Median IOU | Median F1 | Median Symmetric Ratio (FEDS - Reference) |
 |-------------------------|--------------------------------|--------------|------------------|-------------------|--------------|------------|-----------|--------------------------------------------|
@@ -238,14 +248,14 @@ This notebook compares FEDS large fire archives API dataset [Link/number to cita
 |           6             |               8                |    1.216     |      0.794       |       0.763       |     0.867     |   0.329    |   0.631   |                0.552                       |
 |           7             |               7                |    0.579     |      0.576       |       0.804       |     0.485     |   0.09     |   0.181   |                0.924                       |
 |           8+            |               132              |    0.974     |      0.703       |       0.774       |     0.612     |   0.115    |   0.236   |                0.944                       |
-Table 1: 2018-2021 United States FEDS Perimeter Archive VS. NIFC InterAgencyFirePerimeterHistory All Years View Statistical Results, rounded to the third decimal place
+Table 2: 2018-2021 United States FEDS Perimeter Archive VS. NIFC InterAgencyFirePerimeterHistory All Years View Statistical Results, rounded to the third decimal place
 
 
 ## Discussion
 
-An example output table for the ``US_2018_TO_2021_ANALYSIS_RUN.ipynb`` run is demonstrated in Table 1. Each CSV row entry represents an absolute day difference category (how far apart in days the FEDS and Reference timestamp are). FEDS-Reference pairs occurring 1 day appart are sorted into the 1 day category, 2 day into 2 day, etc. In addition, the number of pairs per category is displayed in the “Numer of FEDS/Reference Pairs” column. Lastly, for each day difference category, there are 7 calculation type columns (ratio, accuracy precision, recall, IOU, F1, symmetric ratio). Each calculation typecolumn value is the median of all calculations of the specified type, per entries in the category (e.g. 0.876 is the median value of all ratio values of FEDS/Reference pairs in the 0 day difference category).  
+An example output table for the ``US_2018_TO_2021_ANALYSIS_RUN.ipynb`` run is demonstrated in Table 2. Each CSV row entry represents an absolute day difference category (how far apart in days the FEDS and Reference timestamp are). FEDS-Reference pairs occurring 1 day appart are sorted into the 1 day category, 2 day into 2 day, etc. In addition, the number of pairs per category is displayed in the “Numer of FEDS/Reference Pairs” column. Lastly, for each day difference category, there are 7 calculation type columns (ratio, accuracy precision, recall, IOU, F1, symmetric ratio). Each calculation typecolumn value is the median of all calculations of the specified type, per entries in the category (e.g. 0.876 is the median value of all ratio values of FEDS/Reference pairs in the 0 day difference category).  
 
-One potential interpretation of the results in Table 1 is after 4 days of difference, overall accuracy begins to decrease. However, 8+ day difference row stands as an exception, likely indicating that there are wildfire perimeters slowing in growth, such that satellite observations recreate the growth despite the absolute day difference.  
+One potential interpretation of the results in Table 2 is after 4 days of difference, overall accuracy begins to decrease. However, 8+ day difference row stands as an exception, likely indicating that there are wildfire perimeters slowing in growth, such that satellite observations recreate the growth despite the absolute day difference.  
 
 However, it is important to note that the timestamps of the NIFC InterAgencyFirePerimeterHistory All Years View dataset may vary in accuracy (e.g. timestamp records last edit of polygon, not actual polygon creation). This challenge is one of many that can be faced when using third party datasets for fire perimeter research, which can be overcome by manual inspection of data and plotting datasets, all supported by FEDS-PEC outputs.
 
