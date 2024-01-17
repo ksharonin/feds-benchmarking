@@ -2,11 +2,11 @@
 
 ## Authors
 
-Authors: Katrina Sharonin (KS)
+Authors: Katrina Sharonin
 
-Co-Authors: Tempest McCabe (TM)
+Co-Authors: Tempest McCabe, Yang Chen
 
-KS conceived of the project, designed and wrote software. KS wrote paper and documentation. TM tested software and advised on project direction. 
+Katrina Sharonin conceived of the project, designed and wrote software. Katrina Sharonin also wrote the JOSS paper and documentation. Tempest McCabe tested software and advised on project direction. Yang Chen provided editorial assistance in refining the JOSS paper.
 
 ## Introduction
 
