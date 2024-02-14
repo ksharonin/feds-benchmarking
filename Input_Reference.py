@@ -35,6 +35,8 @@ class InputReference():
                                  "Downloaded_InterAgencyFirePerimeterHistory_All_Years_View",
                                  "WFIGS_current_interagency_fire_perimeters",
                                  "california_fire_perimeters_all",
+                                 "Historic_GeoMAC_Perimeters_2018",
+                                 "Historic_GeoMAC_Perimeters_2019",
                                  "none"]
     # CONTROL - custom will need to provide their own read types
     CONTROL_TYPE = ["defined", "custom"]
@@ -46,7 +48,9 @@ class InputReference():
         # "WFIGS_Interagency_Fire_Perimeters": [ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
             "WFIGS_current_interagency_fire_perimeters" : ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Interagency_Perimeters_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson" , "arc_gis_online"],
             # "current_wildland_fire_incident_locations" :[ "https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/WFIGS_Incident_Locations_Current/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
-            "california_fire_perimeters_all": [ "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Fire_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"]
+            "california_fire_perimeters_all": [ "https://services1.arcgis.com/jUJYIo9tSA7EHvfZ/arcgis/rest/services/California_Fire_Perimeters/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
+            "Historic_GeoMAC_Perimeters_2018": ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Historic_Geomac_Perimeters_2018/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"],
+            "Historic_GeoMAC_Perimeters_2019": ["https://services3.arcgis.com/T4QMspbfLg3qTGWY/arcgis/rest/services/Historic_GeoMAC_Perimeters_2019/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson", "arc_gis_online"]
             }
     
     # instance initiation
@@ -117,7 +121,7 @@ class InputReference():
     # MASTER SET UP FUNCTION
     def __set_up_master(self):
         """ set up instance properties; depends if defined or custom access """
-        assert self._title in InputReference.REFERENCE_PREDEFINED_SETS, f"Provided title {self._title} is not defined."
+        assert self._title in InputReference.REFERENCE_PREDEFINED_SETS, f"Provided title {self._title} is not defined. Current list: {InputReference.REFERENCE_PREDEFINED_SETS}"
         
         # if agency defined then use predefined dict, otherwise use user inputs
         if self._title != "none" and self._control_type == "defined":
@@ -179,6 +183,8 @@ class InputReference():
             df = self.filter_WFIGS_current_interagency_fire_perimeters(df)
         elif self._title == "california_fire_perimeters_all":
             df = self.filter_california_fire_perimeters_all(df)
+        elif self._title.startswith("Historic_GeoMAC_Perimeters_"):
+            df = self.filter_geomac(df)
         elif self._title == "" or self._title == "custom" or self._title == "Custom" or self._title == "none" or self._title == "None":
             df = self.filter_custom_local(df)
         else:
@@ -280,6 +286,20 @@ class InputReference():
             gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row : datetime.datetime.strptime(getattr(row, 'DATE_CUR'), nifc_date_format), axis = 1)
             gdf = gdf[gdf.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
             
+        elif self._title.startswith("Historic_GeoMAC_Perimeters_"):
+            # assume same timestamp format as WFIGS
+            gdf['is_valid_geometry'] = gdf['geometry'].is_valid
+            gdf = gdf[gdf['is_valid_geometry'] == True]
+            gdf = gdf[gdf.geometry != None]
+            gdf['DATE_NOT_NONE'] = gdf.apply(lambda row : getattr(row, 'perimeterdatetime') is not None, axis = 1)
+            gdf = gdf[gdf.DATE_NOT_NONE == True]
+            gdf = gdf.dropna(subset=['perimeterdatetime'])
+            gdf['DATE_CUR_STAMP'] =  gdf.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'perimeterdatetime') / 1000.0), axis = 1)
+            # outcast non matches in year self._usr_start
+            gdf = gdf[gdf.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]
+            
+            gdf = gdf.set_crs(self._crs, allow_override=True)
+            # gdf = gdf.to_crs(self._crs)
         
         gdf['index'] = gdf.index
         
@@ -398,6 +418,26 @@ class InputReference():
         df['DATE_NOT_NONE'] = df.apply(lambda row : getattr(row, 'poly_PolygonDateTime') is not None, axis = 1)
         df = df[df.DATE_NOT_NONE == True]
         df['DATE_CUR_STAMP'] =  df.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'poly_PolygonDateTime') / 1000.0), axis = 1)
+        # outcast non matches in year self._usr_start
+        df = df[df.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]  
+        
+        return df
+    
+    def filter_geomac(self, df):
+        """ predefined filter for the GeoMAC sets
+            - generate 'DATE_CUR_STAMP' col - assume 'perimeterdatetime' used
+            - set crs
+            - remove none dates
+        
+        """
+        
+        df_date = datetime.fromisoformat(self._usr_start)
+        df_year = df_date.year
+        df = df.set_crs(self._crs, allow_override=True)
+        
+        df['DATE_NOT_NONE'] = df.apply(lambda row : getattr(row, 'perimeterdatetime') is not None, axis = 1)
+        df = df[df.DATE_NOT_NONE == True]
+        df['DATE_CUR_STAMP'] =  df.apply(lambda row :  datetime.datetime.fromtimestamp(getattr(row, 'perimeterdatetime') / 1000.0), axis = 1)
         # outcast non matches in year self._usr_start
         df = df[df.DATE_CUR_STAMP.dt.year == int(self._usr_start[:4])]  
         

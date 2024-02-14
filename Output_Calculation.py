@@ -471,7 +471,7 @@ class OutputCalculation():
                           'incident_name', # need to condition if available
                           'feds_timestamp',
                           'ref_timestamp',
-                          # 'feds_minus_ref_timestamp',
+                          'abs(feds-ref)_days',
                           'ratio', 
                           'accuracy', 
                           'precision', 
@@ -506,8 +506,18 @@ class OutputCalculation():
                     feds_time = feds_poly.t.values[0]
                     ref_time = ref_poly['DATE_CUR_STAMP'].values[0]
                     
-                    # TODO t difference
-                    # feds_minus_ref_time = feds_time - ref_time
+                    # print(f"DEBUG type for feds time {type(feds_time)}")
+                    
+                    # convert for abso
+                    feds_time_int = datetime.strptime(feds_time, "%Y-%m-%dT%H:%M:%S")
+                    ref_time_str = str(ref_time)
+                    ref_format = "%Y-%m-%dT%H:%M:%S.%f" + ref_time_str[-3:]
+                    ref_time_int = datetime.strptime(ref_time_str, ref_format)
+                    
+                    # ref_time_int = ref_time.astype(datetime) # datetime.strptime(ref_time, "%Y-%m-%dT%H:%M:%S")
+                    # abso difference in days
+                    abs_day_diff = abs((feds_time_int - ref_time_int).days)
+                    
                     # UFuncTypeError: ufunc 'subtract' cannot use operands with types dtype('<U19') and dtype('<M8[ns]')
                     # suspect name match - use known pre-definedd col labels
                     if 'INCIDENT' in ref_poly.columns:
@@ -516,6 +526,8 @@ class OutputCalculation():
                         incident_name = ref_poly['poly_IncidentName'].values[0]
                     elif 'FIRE_NAME' in ref_poly.columns:
                         incident_name = ref_poly['FIRE_NAME'].values[0]
+                    elif 'incidentname' in ref_poly.columns:
+                        incident_name = ref_poly['incidentname'].values[0]
                     else:
                         incident_name = ""
                     
@@ -527,7 +539,7 @@ class OutputCalculation():
                         'incident_name': incident_name,
                         'feds_timestamp': feds_time,
                         'ref_timestamp': ref_time,
-                        # 'feds_minus_ref_timestamp': feds_minus_ref_time,
+                        'abs(feds-ref)_days': abs_day_diff,
                         'ratio': calculations['ratio'][i],
                         'accuracy': calculations['accuracy'][i],
                         'precision': calculations['precision'][i],
