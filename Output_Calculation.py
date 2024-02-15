@@ -556,65 +556,80 @@ class OutputCalculation():
     # TIF READING AND PROCESSING
     
     def tif_analysis(self, tif_path: str, req_calc: str, date_restrict = None):
-        """ given output obj with available feds + ref polygons
-            user specifies tif path (tif_path) and req_calcs (str that is
-            MEAN, MEDIAN, UNIQUE)
-        
-        """
-        
-        # input checks
-        valid_calc_choices = ["MEAN", "MEDIAN", "UNIQUE"]
-        
-        assert req_calc in valid_calc_choices, f"Provided req_calc argument is not valid, please select a choice from the following: {valid_calc_choices}"
-        
-        # assign main polygons
-        feds_polygons = self._feds_input.polygons
-        ref_polygons =self._ref_input.polygons
-        indices = self._calculations['index_pairs']
-        
-        # correspond to indices/pairs
-        mass_results = []
-        
-        for pair in indices:
-            
-            index1, index2 = pair
-            
-            if index2 is None:
-                continue
-                
-            feds_inst = feds_polygons[feds_polygons['index'] == index1]
-            ref_inst = ref_polygons[ref_polygons['index'] == index2]
-            
-            # given an int time restriction, eliminate pairs not in bounds 
-            if date_restrict is not None:
-                assert type(date_restrict) is int, "date_restrict must be int, as in number of days permitted for timestamp difference"
-                # assert of datetime type 
-                feds_time = datetime.strptime(feds_inst.t.values[0], "%Y-%m-%dT%H:%M:%S")
-                is_within_time_given = OutputCalculation.get_nearest_by_date(ref_inst, feds_time, date_restrict)
-                if  is_within_time_given.empty or is_within_time_given is None:
-                    continue
-                
-            # exceeding zone for feds: feds - ref == feds exceed amount
-            # diff_area = gpd.overlay(feds_inst, ref_inst, how='symmetric_difference')
-            diff_area = feds_inst.symmetric_difference(ref_inst, align=False)
-            
-            # open and generate mask tif
-            with rasterio.open(tif_path) as src:
-                masked_tif, _ = mask(src, intersection_area.geometry, crop=True)
-            
-            # append requested val generated from usr req
-            if masked_tif is not None:
-                if req_calc == "MEAN":
-                    avg_val = np.nanmean(masked_tif)
-                    mass_results.append(avg_val)
-                elif req_calc == "MEDIAN":
-                    median_val = np.nanmedian(masked_tif)
-                    mass_results.append(median_val)
-                else:
-                    unique_vals = np.unique(masked_tif)
-                    mass_results.append([unique_vals])
+            """ given output obj with available feds + ref polygons
+                user specifies tif path (tif_path) and req_calcs (str that is
+                MEAN, MEDIAN, UNIQUE)
 
-        return mass_results
+            """
+            # target_crs
+            dst_crs = self._feds_input._crs
+
+            # input checks
+            valid_calc_choices = ["MEAN", "MEDIAN", "UNIQUE"]
+
+            assert req_calc in valid_calc_choices, f"Provided req_calc argument is not valid, please select a choice from the following: {valid_calc_choices}"
+
+            # assign main polygons
+            feds_polygons = self._feds_input.polygons
+            ref_polygons =self._ref_input.polygons
+            indices = self._calculations['index_pairs']
+
+            # correspond to indices/pairs
+            mass_results = []
+
+            for pair in indices:
+
+                index1, index2 = pair
+                if index2 is None:
+                    continue
+
+                feds_inst = feds_polygons[feds_polygons['index'] == index1]
+                ref_inst = ref_polygons[ref_polygons['index'] == index2]
+
+                # given an int time restriction, eliminate pairs not in bounds 
+                if date_restrict is not None:
+                    assert type(date_restrict) is int, "date_restrict must be int, as in number of days permitted for timestamp difference"
+                    # assert of datetime type 
+                    feds_time = datetime.strptime(feds_inst.t.values[0], "%Y-%m-%dT%H:%M:%S")
+                    is_within_time_given = OutputCalculation.get_nearest_by_date(ref_inst, feds_time, date_restrict)
+                    if  is_within_time_given.empty or is_within_time_given is None:
+                        continue
+
+                # exceeding zone for feds: feds - ref == feds exceed amount
+                # diff_area = gpd.overlay(feds_inst, ref_inst, how='symmetric_difference')
+                diff_area = feds_inst.symmetric_difference(ref_inst, align=False)
+
+                # open and generate mask tif
+                with rasterio.open(tif_path) as src:
+                    # masked_tif, _ = mask(src, diff_area.geometry, crop=True)
+                    transform, width, height = calculate_default_transform(src.crs, dst_crs, src.width, src.height, *src.bounds)
+                    kwargs = src.meta.copy()
+                    kwargs.update({
+                        'crs': dst_crs,
+                        'transform': transform,
+                        'width': width,
+                        'height': height
+                    })
+
+                    # gead and reproject the GeoTIFF data
+                    reprojected_src = src.read(1, out_shape=(height, width), resampling=Resampling.nearest)
+
+                    # gen mask
+                    masked_tif, _ = mask(reprojected_src, diff_area.geometry, crop=True)
+
+                # append requested val generated from usr req
+                if masked_tif is not None:
+                    if req_calc == "MEAN":
+                        avg_val = np.nanmean(masked_tif)
+                        mass_results.append(avg_val)
+                    elif req_calc == "MEDIAN":
+                        median_val = np.nanmedian(masked_tif)
+                        mass_results.append(median_val)
+                    else:
+                        unique_vals = np.unique(masked_tif)
+                        mass_results.append([unique_vals])
+
+            return mass_results
     
     #### WARNING: EXPERIMENTAL METHODS BELOW, NOT CONFORMING TO OOP DESIGN ###   
     
